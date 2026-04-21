@@ -1,2 +1,1 @@
-# Weyrix
-Weyrix Project - a local web messenger for users and organizations
+Weyrix Project - a local web messenger for users and organizations.
