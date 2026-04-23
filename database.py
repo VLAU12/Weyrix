@@ -8,6 +8,6 @@ engine = create_async_engine(url=database_url)
 async_session_makerb = async_sessionmaker(engine, class_=AsyncSession)
 
 class Base(AsyncAtters, DeclarativeBase):
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    updeted_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+    created_at: Maped[datetime] = mapped_column(server_default=func.now())
+    updeted_at: Maped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
