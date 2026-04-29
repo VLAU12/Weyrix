@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weyrix</title>
+</head>
+<body>
+    <div style="width: 800px; margin: 20px auto;">
+        <h1>Weyrix</h1>
+        <button onclick="logout()">Выход</button>
+        <hr>
+        
+        <div style="display: flex; gap: 20px;">
+            <!-- Список пользователей -->
+            <div style="width: 200px; border: 1px solid #ccc; padding: 10px;">
+                <h3>Пользователи</h3>
+                <div id="userList">
+                    <div onclick="selectUser({{ user.id }}, 'Избранное')">
+                        <strong>Избранное</strong>
+                    </div>
+                    {% for chat in users_all %}
+                        {% if chat.id != user.id %}
+                            <div onclick="selectUser({{ chat.id }}, '{{ chat.name }}')">
+                                {{ chat.name }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Область чата -->
+            <div style="flex: 1; border: 1px solid #ccc; padding: 10px;">
+                <div id="chatHeader">
+                    <h3>Выберите чат для общения</h3>
+                </div>
+                
+                <div id="messages" style="height: 400px; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin-bottom: 10px;">
+                    
+                </div>
+                
+                <div>
+                    <input type="text" id="messageInput" placeholder="Введите сообщение..." style="width: 70%;" disabled>
+                    <button id="sendButton" disabled>Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let selectedUserId = null;
+        let socket = null;
+        
+        async function logout() {
+            const response = await fetch('/auth/logout/', { method: 'POST' });
+            if (response.ok) {
+                window.location.href = '/auth';
+            }
+        }
+        
+        async function selectUser(userId, userName) {
+            selectedUserId = userId;
+            document.getElementById('chatHeader').innerHTML = `<h3>Чат с ${userName}</h3>`;
+            document.getElementById('messageInput').disabled = false;
+            document.getElementById('sendButton').disabled = false;
+            
+            await loadMessages(userId);
+            connectWebSocket();
+        }
+        
+        async function loadMessages(userId) {
+            const response = await fetch(`/chat/messages/${userId}`);
+            const messages = await response.json();
+            
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = messages.map(msg => {
+                const isMyMessage = msg.sender_id === parseInt(selectedUserId);
+                return `<div style="text-align: ${isMyMessage ? 'right' : 'left'}; margin: 5px;">
+                            <strong>${isMyMessage ? 'Я' : 'Собеседник'}:</strong> ${msg.content}
+                        </div>`;
+            }).join('');
+        }
+        
+        function connectWebSocket() {
+            if (socket) socket.close();
+            socket = new WebSocket(`ws://${window.location.host}/chat/ws/${selectedUserId}`);
+            
+            socket.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                addMessage(message.content, message.sender_id);
+            };
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message && selectedUserId) {
+                const payload = { recipient_id: selectedUserId, content: message };
+                
+                await fetch('/chat/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                addMessage(message, selectedUserId);
+                input.value = '';
+            }
+        }
+        
+        function addMessage(text, senderId) {
+            const messagesDiv = document.getElementById('messages');
+            const isMyMessage = senderId === selectedUserId;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.style.textAlign = isMyMessage ? 'right' : 'left';
+            messageDiv.style.margin = '5px';
+            messageDiv.innerHTML = `<strong>${isMyMessage ? 'Я' : 'Собеседник'}:</strong> ${text}`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        document.getElementById('sendButton').onclick = sendMessage;
+        document.getElementById('messageInput').onkeypress = (e) => {
+            if (e.key === 'Enter') sendMessage();
+        };
+    </script>
+</body>
+</html>

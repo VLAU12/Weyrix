@@ -1,32 +1,134 @@
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мини-чат: Вход и Регистрация</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', path='styles/auth.css') }}">
+    <title>Weyrix: Вход</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; background: #f0f0f0; border-radius: 5px; }
+        .tab.active { background: #007bff; color: white; }
+        .form { display: none; }
+        .form.active { display: block; }
+        input { width: 100%; padding: 8px; margin: 5px 0 15px 0; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .error { color: red; margin-top: 10px; }
+        .success { color: green; margin-top: 10px; }
+    </style>
 </head>
 <body>
-<div class="container">
+    <h1>Мини-чат</h1>
+    
     <div class="tabs">
-        <div class="tab active" data-tab="login">Авторизация</div>
-        <div class="tab" data-tab="register">Регистрация</div>
+        <div class="tab active" onclick="showTab('login')">Авторизация</div>
+        <div class="tab" onclick="showTab('register')">Регистрация</div>
     </div>
-    <div class="content">
-        <form id="loginForm" class="form active">
-            <input type="email" placeholder="Email" required>
-            <input type="password" placeholder="Пароль" required>
-            <button id="loginButton" type="submit">Войти</button>
-        </form>
-        <form id="registerForm" class="form">
-            <input type="email" placeholder="Email" required>
-            <input type="text" placeholder="Имя" required>
-            <input type="password" placeholder="Пароль" required>
-            <input type="password" placeholder="Повторите пароль" required>
-            <button id="registerButton" type="submit">Зарегистрироваться</button>
-        </form>
+    
+    <div id="loginForm" class="form active">
+        <h2>Вход</h2>
+        <input type="email" id="loginEmail" placeholder="Email">
+        <input type="password" id="loginPassword" placeholder="Пароль">
+        <button onclick="login()">Войти</button>
     </div>
-</div>
+    
+    <div id="registerForm" class="form">
+        <h2>Регистрация</h2>
+        <input type="email" id="regEmail" placeholder="Email">
+        <input type="text" id="regName" placeholder="Имя">
+        <input type="password" id="regPassword" placeholder="Пароль">
+        <input type="password" id="regPasswordCheck" placeholder="Повторите пароль">
+        <button onclick="register()">Зарегистрироваться</button>
+    </div>
+    
+    <div id="message"></div>
 
-<script src="{{ url_for('static', path='js/auth.js') }}"></script>
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Form').classList.add('active');
+        }
+
+        async function register() {
+            const email = document.getElementById('regEmail').value;
+            const name = document.getElementById('regName').value;
+            const password = document.getElementById('regPassword').value;
+            const password_check = document.getElementById('regPasswordCheck').value;
+            
+            const data = {
+                email: email,
+                name: name,
+                password: password,
+                password_check: password_check
+            };
+            
+            console.log('Sending:', data);
+            
+            try {
+                const response = await fetch('/auth/register/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                console.log('Response:', result);
+                
+                if (response.ok) {
+                    alert('Регистрация успешна! Теперь войдите.');
+                    showTab('login');
+                    document.getElementById('regEmail').value = '';
+                    document.getElementById('regName').value = '';
+                    document.getElementById('regPassword').value = '';
+                    document.getElementById('regPasswordCheck').value = '';
+                } else {
+                    alert('Ошибка: ' + (result.detail || JSON.stringify(result)));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ошибка при отправке: ' + error.message);
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            const data = {
+                email: email,
+                password: password
+            };
+            
+            console.log('Sending:', data);
+            
+            try {
+                const response = await fetch('/auth/login/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                console.log('Response:', result);
+                
+                if (response.ok) {
+                    alert('Вход выполнен успешно!');
+                    window.location.href = '/chat';
+                } else {
+                    alert('Ошибка: ' + (result.detail || 'Неверный email или пароль'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ошибка при отправке: ' + error.message);
+            }
+        }
+    </script>
 </body>
 </html>
