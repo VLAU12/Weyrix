@@ -2,6 +2,12 @@ let selectedUserId = null;  // Хранит ID пользователя, с ко
 let socket = null;          // Хранит объект WebSocket для соединения с сервером
 let messagePollingInterval = null;  // Таймер для периодической загрузки сообщений
 
+function addUserClickListeners() {
+    document.querySelectorAll('.user-item').forEach(item => {
+        item.onclick = event => selectUser(item.getAttribute('data-user-id'), item.textContent, event);
+    });
+}
+
 // Функция для выхода из аккаунта
 async function logout() {
     try {
@@ -60,7 +66,7 @@ async function loadMessages(userId) {
 function connectWebSocket() {
     if (socket) socket.close();  // Если соединение уже было, закрываем его
 
-    socket = new WebSocket(`wss://${window.location.host}/chat/ws/${selectedUserId}`);  // Открываем новое WebSocket-соединение
+    socket = new WebSocket(`ws://${window.location.host}/chat/ws/${selectedUserId}`);
 
     socket.onopen = () => console.log('WebSocket соединение установлено');  // Логируем успешное подключение
 

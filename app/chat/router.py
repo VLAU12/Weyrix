@@ -12,7 +12,6 @@ import asyncio
 router = APIRouter(prefix='/chat', tags=['Chat'])
 templates = Jinja2Templates(directory='app/templates')
 
-# Активные WebSocket-подключения
 active_connections: Dict[int, WebSocket] = {}
 
 async def notify_user(user_id: int, message: dict):
@@ -20,7 +19,7 @@ async def notify_user(user_id: int, message: dict):
         websocket = active_connections[user_id]
         await websocket.send_json(message)
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, summary="Chat Page")
 async def get_chat_page(request: Request, user_data: User = Depends(get_current_user)):
     users_all = await UsersDAO.find_all()
     return templates.TemplateResponse("chat.html",

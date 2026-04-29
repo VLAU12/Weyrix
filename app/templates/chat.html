@@ -3,128 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weyrix</title>
+    <title>Мини-чат</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f0f0; }
+        .chat-container { display: flex; max-width: 1200px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .user-list { width: 250px; background: #2c3e50; color: white; height: 80vh; overflow-y: auto; }
+        .user-item { padding: 15px; cursor: pointer; border-bottom: 1px solid #34495e; transition: background 0.3s; }
+        .user-item:hover { background: #34495e; }
+        .user-item.active { background: #007bff; }
+        .chat-area { flex: 1; display: flex; flex-direction: column; height: 80vh; }
+        .chat-header { padding: 15px; background: #007bff; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .logout-button { padding: 5px 15px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .logout-button:hover { background: #c82333; }
+        .messages { flex: 1; padding: 20px; overflow-y: auto; background: #f8f9fa; }
+        .message { margin-bottom: 10px; padding: 10px; border-radius: 10px; max-width: 60%; word-wrap: break-word; }
+        .my-message { background: #007bff; color: white; margin-left: auto; text-align: right; }
+        .other-message { background: #e9ecef; color: black; }
+        .input-area { display: flex; padding: 15px; background: white; border-top: 1px solid #ddd; }
+        .input-area input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-right: 10px; }
+        .input-area button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .input-area button:hover { background: #0056b3; }
+        .input-area button:disabled, .input-area input:disabled { opacity: 0.5; cursor: not-allowed; }
+        .welcome-message { text-align: center; color: #999; padding: 50px; }
+    </style>
 </head>
 <body>
-    <div style="width: 800px; margin: 20px auto;">
-        <h1>Weyrix</h1>
-        <button onclick="logout()">Выход</button>
-        <hr>
-        
-        <div style="display: flex; gap: 20px;">
-            <!-- Список пользователей -->
-            <div style="width: 200px; border: 1px solid #ccc; padding: 10px;">
-                <h3>Пользователи</h3>
-                <div id="userList">
-                    <div onclick="selectUser({{ user.id }}, 'Избранное')">
-                        <strong>Избранное</strong>
-                    </div>
-                    {% for chat in users_all %}
-                        {% if chat.id != user.id %}
-                            <div onclick="selectUser({{ chat.id }}, '{{ chat.name }}')">
-                                {{ chat.name }}
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            
-            <!-- Область чата -->
-            <div style="flex: 1; border: 1px solid #ccc; padding: 10px;">
-                <div id="chatHeader">
-                    <h3>Выберите чат для общения</h3>
-                </div>
-                
-                <div id="messages" style="height: 400px; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin-bottom: 10px;">
-                    
-                </div>
-                
-                <div>
-                    <input type="text" id="messageInput" placeholder="Введите сообщение..." style="width: 70%;" disabled>
-                    <button id="sendButton" disabled>Отправить</button>
-                </div>
-            </div>
+<div class="chat-container">
+    <div class="user-list" id="userList"></div>
+    <div class="chat-area">
+        <div class="chat-header" id="chatHeader">
+            <span>Мини-чат</span>
+            <button class="logout-button" onclick="logout()">Выход</button>
+        </div>
+        <div class="messages" id="messages">
+            <div class="welcome-message">Выберите чат для общения</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Введите сообщение..." disabled>
+            <button id="sendButton" disabled>Отправить</button>
         </div>
     </div>
-    
-    <script>
-        let selectedUserId = null;
-        let socket = null;
-        
-        async function logout() {
-            const response = await fetch('/auth/logout/', { method: 'POST' });
-            if (response.ok) {
-                window.location.href = '/auth';
-            }
+</div>
+
+<script>
+    const currentUserId = parseInt("{{ user.id }}", 10);
+    let selectedUserId = null;
+    let socket = null;
+    let messagePollingInterval = null;
+
+    async function logout() {
+        const response = await fetch('/auth/logout/', { method: 'POST' });
+        if (response.ok) {
+            window.location.href = '/auth';
         }
-        
-        async function selectUser(userId, userName) {
-            selectedUserId = userId;
-            document.getElementById('chatHeader').innerHTML = `<h3>Чат с ${userName}</h3>`;
-            document.getElementById('messageInput').disabled = false;
-            document.getElementById('sendButton').disabled = false;
+    }
+
+    function addUserClickListeners() {
+        document.querySelectorAll('.user-item').forEach(item => {
+            item.onclick = (event) => {
+                const userId = parseInt(item.getAttribute('data-user-id'));
+                const userName = item.textContent === 'Избранное' ? 'Избранное' : item.textContent;
+                selectUser(userId, userName, event);
+            };
+        });
+    }
+
+    async function fetchUsers() {
+        try {
+            const response = await fetch('/auth/users');
+            const users = await response.json();
+            const userList = document.getElementById('userList');
             
-            await loadMessages(userId);
-            connectWebSocket();
+            userList.innerHTML = '';
+            
+            const favoriteElement = document.createElement('div');
+            favoriteElement.classList.add('user-item');
+            favoriteElement.setAttribute('data-user-id', currentUserId);
+            favoriteElement.textContent = '⭐ Избранное';
+            userList.appendChild(favoriteElement);
+            
+            users.forEach(user => {
+                if (user.id !== currentUserId) {
+                    const userElement = document.createElement('div');
+                    userElement.classList.add('user-item');
+                    userElement.setAttribute('data-user-id', user.id);
+                    userElement.textContent = user.name;
+                    userList.appendChild(userElement);
+                }
+            });
+            
+            addUserClickListeners();
+        } catch (error) {
+            console.error('Ошибка загрузки пользователей:', error);
+        }
+    }
+
+    async function selectUser(userId, userName, event) {
+        selectedUserId = userId;
+        document.getElementById('chatHeader').innerHTML = `<span>💬 Чат с ${userName}</span><button class="logout-button" onclick="logout()">Выход</button>`;
+        document.getElementById('messageInput').disabled = false;
+        document.getElementById('sendButton').disabled = false;
+        
+        document.querySelectorAll('.user-item').forEach(item => item.classList.remove('active'));
+        if (event && event.target) {
+            event.target.classList.add('active');
         }
         
-        async function loadMessages(userId) {
+        const messagesContainer = document.getElementById('messages');
+        messagesContainer.innerHTML = '';
+        
+        await loadMessages(userId);
+        connectWebSocket();
+        startMessagePolling(userId);
+    }
+
+    async function loadMessages(userId) {
+        try {
             const response = await fetch(`/chat/messages/${userId}`);
             const messages = await response.json();
-            
-            const messagesDiv = document.getElementById('messages');
-            messagesDiv.innerHTML = messages.map(msg => {
-                const isMyMessage = msg.sender_id === parseInt(selectedUserId);
-                return `<div style="text-align: ${isMyMessage ? 'right' : 'left'}; margin: 5px;">
-                            <strong>${isMyMessage ? 'Я' : 'Собеседник'}:</strong> ${msg.content}
-                        </div>`;
-            }).join('');
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = messages.map(message =>
+                createMessageElement(message.content, message.sender_id)
+            ).join('');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        } catch (error) {
+            console.error('Ошибка загрузки сообщений:', error);
         }
+    }
+
+    function connectWebSocket() {
+        if (socket) socket.close();
+        socket = new WebSocket(`ws://${window.location.host}/chat/ws/${selectedUserId}`);
+        socket.onopen = () => console.log('WebSocket соединение установлено');
+        socket.onmessage = (event) => {
+            const incomingMessage = JSON.parse(event.data);
+            if (incomingMessage.recipient_id === selectedUserId || incomingMessage.sender_id === selectedUserId) {
+                addMessage(incomingMessage.content, incomingMessage.sender_id);
+            }
+        };
+        socket.onclose = () => console.log('WebSocket соединение закрыто');
+        socket.onerror = (error) => console.error('WebSocket ошибка:', error);
+    }
+
+    async function sendMessage() {
+        const messageInput = document.getElementById('messageInput');
+        const message = messageInput.value.trim();
         
-        function connectWebSocket() {
-            if (socket) socket.close();
-            socket = new WebSocket(`ws://${window.location.host}/chat/ws/${selectedUserId}`);
+        if (message && selectedUserId) {
+            const payload = { recipient_id: selectedUserId, content: message };
             
-            socket.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                addMessage(message.content, message.sender_id);
-            };
-        }
-        
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            
-            if (message && selectedUserId) {
-                const payload = { recipient_id: selectedUserId, content: message };
-                
+            try {
                 await fetch('/chat/messages', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 
-                addMessage(message, selectedUserId);
-                input.value = '';
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify(payload));
+                }
+                addMessage(message, currentUserId);
+                messageInput.value = '';
+            } catch (error) {
+                console.error('Ошибка при отправке:', error);
+                alert('Ошибка при отправке сообщения');
             }
         }
-        
-        function addMessage(text, senderId) {
-            const messagesDiv = document.getElementById('messages');
-            const isMyMessage = senderId === selectedUserId;
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.style.textAlign = isMyMessage ? 'right' : 'left';
-            messageDiv.style.margin = '5px';
-            messageDiv.innerHTML = `<strong>${isMyMessage ? 'Я' : 'Собеседник'}:</strong> ${text}`;
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-        
-        document.getElementById('sendButton').onclick = sendMessage;
-        document.getElementById('messageInput').onkeypress = (e) => {
-            if (e.key === 'Enter') sendMessage();
-        };
-    </script>
+    }
+
+    function addMessage(text, senderId) {
+        const messagesContainer = document.getElementById('messages');
+        messagesContainer.insertAdjacentHTML('beforeend', createMessageElement(text, senderId));
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function createMessageElement(text, senderId) {
+        const isMyMessage = senderId === currentUserId;
+        const messageClass = isMyMessage ? 'my-message' : 'other-message';
+        const sender = isMyMessage ? 'Я' : 'Собеседник';
+        return `<div class="message ${messageClass}"><strong>${sender}:</strong><br>${text}</div>`;
+    }
+
+    function startMessagePolling(userId) {
+        if (messagePollingInterval) clearInterval(messagePollingInterval);
+        messagePollingInterval = setInterval(() => loadMessages(userId), 3000);
+    }
+
+    document.getElementById('sendButton').onclick = sendMessage;
+    document.getElementById('messageInput').onkeypress = (e) => {
+        if (e.key === 'Enter') sendMessage();
+    };
+    
+    fetchUsers();
+    setInterval(fetchUsers, 10000);
+</script>
 </body>
 </html>

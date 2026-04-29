@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Response, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from typing import List
 from app.exceptions import UserAlreadyExistsException, IncorrectEmailOrPasswordException, PasswordMismatchException
 from app.users.auth import get_password_hash, authenticate_user, create_access_token
 from app.users.dao import UsersDAO
-from app.users.schemas import SUserRegister, SUserAuth
+from app.users.schemas import SUserRegister, SUserAuth, SUserRead
 
 router = APIRouter(prefix='/auth', tags=['Auth'])
 templates = Jinja2Templates(directory='app/templates')
@@ -15,14 +16,12 @@ async def get_auth_page(request: Request):
 
 @router.post("/register/")
 async def register_user(user_data: SUserRegister) -> dict:
-    print(f"Register attempt: {user_data.email}, {user_data.name}")  # Отладка
     user = await UsersDAO.find_one_or_none(email=user_data.email)
     if user:
         raise UserAlreadyExistsException
     
     if user_data.password != user_data.password_check:
         raise PasswordMismatchException("Пароли не совпадают")
-    
     hashed_password = get_password_hash(user_data.password)
     await UsersDAO.add(
         name=user_data.name,
@@ -33,7 +32,6 @@ async def register_user(user_data: SUserRegister) -> dict:
 
 @router.post("/login/")
 async def auth_user(response: Response, user_data: SUserAuth):
-    print(f"Login attempt: {user_data.email}")  # Отладка
     check = await authenticate_user(email=user_data.email, password=user_data.password)
     if check is None:
         raise IncorrectEmailOrPasswordException
@@ -45,3 +43,8 @@ async def auth_user(response: Response, user_data: SUserAuth):
 async def logout_user(response: Response):
     response.delete_cookie(key="users_access_token")
     return {'message': 'Пользователь успешно вышел из системы'}
+
+@router.get("/users", response_model=List[SUserRead])
+async def get_users():
+    users_all = await UsersDAO.find_all()
+    return [{'id': user.id, 'name': user.name} for user in users_all]
