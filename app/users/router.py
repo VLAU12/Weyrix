@@ -9,6 +9,10 @@ from app.users.schemas import SUserRegister, SUserAuth
 router = APIRouter(prefix='/auth', tags=['Auth'])
 templates = Jinja2Templates(directory='app/templates')
 
+@router.get("/", response_class=HTMLResponse, summary="Страница авторизации")
+async def get_categories(request: Request):
+    return templates.TemplateResponse("auth.html", {"request": request})
+
 @router.get("/", response_class=HTMLResponse)
 async def get_auth_page(request: Request):
     return templates.TemplateResponse("auth.html", {"request": request})
