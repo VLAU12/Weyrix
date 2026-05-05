@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Response, Request
+from fastapi import APIRouter, Response, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from typing import List
@@ -6,6 +6,8 @@ from app.exceptions import UserAlreadyExistsException, IncorrectEmailOrPasswordE
 from app.users.auth import get_password_hash, authenticate_user, create_access_token
 from app.users.dao import UsersDAO
 from app.users.schemas import SUserRegister, SUserAuth, SUserRead
+from app.users.dependencies import get_current_user
+from app.users.models import User
 
 router = APIRouter(prefix='/auth', tags=['Auth'])
 templates = Jinja2Templates(directory='app/templates')
@@ -13,6 +15,10 @@ templates = Jinja2Templates(directory='app/templates')
 @router.get("/", response_class=HTMLResponse)
 async def get_auth_page(request: Request):
     return templates.TemplateResponse("auth.html", {"request": request})
+
+@router.get("/profile", response_class=HTMLResponse)
+async def get_profile_page(request: Request, current_user: User = Depends(get_current_user)):
+    return templates.TemplateResponse("profile.html", {"request": request, "user": current_user})
 
 @router.post("/register/")
 async def register_user(user_data: SUserRegister) -> dict:
@@ -48,3 +54,10 @@ async def logout_user(response: Response):
 async def get_users():
     users_all = await UsersDAO.find_all()
     return [{'id': user.id, 'name': user.name} for user in users_all]
+
+@router.get("/search/{user_id}")
+async def search_user(user_id: int):
+    user = await UsersDAO.find_one_or_none_by_id(user_id)
+    if user:
+        return {'id': user.id, 'name': user.name, 'email': user.email}
+    return None

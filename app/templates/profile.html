@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой профиль</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; margin-bottom: 20px; }
+        .info { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .info p { margin: 10px 0; font-size: 16px; }
+        .label { font-weight: bold; color: #555; }
+        .value { color: #333; }
+        .id-card { background: #007bff; color: white; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
+        .id-card .id-number { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+        .menu { display: flex; gap: 10px; margin-top: 20px; }
+        .menu a, .menu button { flex: 1; text-align: center; padding: 10px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+        .menu button:hover, .menu a:hover { background: #0056b3; }
+        .logout { background: #dc3545; }
+        .logout:hover { background: #c82333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Мой профиль</h1>
+        
+        <div class="id-card">
+            <div>Ваш ID для поиска:</div>
+            <div class="id-number">#{{ user.id }}</div>
+        </div>
+        
+        <div class="info">
+            <p><span class="label">Имя:</span> <span class="value">{{ user.name }}</span></p>
+            <p><span class="label">Email:</span> <span class="value">{{ user.email }}</span></p>
+            <p><span class="label">ID в системе:</span> <span class="value">{{ user.id }}</span></p>
+        </div>
+        
+        <div class="menu">
+            <a href="/chat">Перейти в чат</a>
+            <form action="/auth/logout/" method="post" style="flex: 1;">
+                <button type="submit" class="logout">Выйти</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

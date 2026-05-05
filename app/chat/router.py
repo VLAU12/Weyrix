@@ -2,7 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from typing import List, Dict
-from app.chat.dao import MessagesDAO
+from app.chat.dao import MessagesDAO, DialogsDAO
 from app.chat.schemas import MessageRead, MessageCreate
 from app.users.dao import UsersDAO
 from app.users.dependencies import get_current_user
@@ -19,31 +19,33 @@ async def notify_user(user_id: int, message: dict):
         websocket = active_connections[user_id]
         await websocket.send_json(message)
 
-@router.get("/", response_class=HTMLResponse, summary="Chat Page")
+@router.get("/", response_class=HTMLResponse)
 async def get_chat_page(request: Request, user_data: User = Depends(get_current_user)):
-    users_all = await UsersDAO.find_all()
-    return templates.TemplateResponse("chat.html",
-                                      {"request": request, "user": user_data, 'users_all': users_all})
+    dialogs = await DialogsDAO.get_user_dialogs(user_data.id)
+    return templates.TemplateResponse("chat.html", {
+        "request": request, 
+        "user": user_data, 
+        "dialogs": dialogs
+    })
 
-@router.get("/messages/{user_id}", response_model=List[MessageRead])
-async def get_messages(user_id: int, current_user: User = Depends(get_current_user)):
+@router.get("/dialog/{user_id}", response_model=List[MessageRead])
+async def get_dialog_messages(user_id: int, current_user: User = Depends(get_current_user)):
     return await MessagesDAO.get_messages_between_users(user_id_1=user_id, user_id_2=current_user.id) or []
 
-@router.post("/messages", response_model=MessageCreate)
+@router.post("/messages")
 async def send_message(message: MessageCreate, current_user: User = Depends(get_current_user)):
-    await MessagesDAO.add(
+    message_data = await MessagesDAO.add_message_to_dialog(
         sender_id=current_user.id,
-        content=message.content,
-        recipient_id=message.recipient_id
+        recipient_id=message.recipient_id,
+        content=message.content
     )
-    message_data = {
-        'sender_id': current_user.id,
-        'recipient_id': message.recipient_id,
-        'content': message.content,
-    }
+    
+    # created_at уже строка из dao.py, не нужно преобразовывать
+    
     await notify_user(message.recipient_id, message_data)
     await notify_user(current_user.id, message_data)
-    return {'recipient_id': message.recipient_id, 'content': message.content, 'status': 'ok', 'msg': 'Message saved!'}
+    
+    return {'status': 'ok', 'message': 'Message saved!'}
 
 @router.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
