@@ -1,12 +1,13 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from typing import List, Dict
-from app.chat.dao import MessagesDAO, DialogsDAO
-from app.chat.schemas import MessageRead, MessageCreate
-from app.users.dao import UsersDAO
+from app.chat.dao import MessagesDAO, ChatRoomDAO
+from app.chat.schemas import MessageRead, MessageCreate, ChatRoomCreate
 from app.users.dependencies import get_current_user
 from app.users.models import User
+from app.database import async_session_maker
+from sqlalchemy import select
 import asyncio
 
 router = APIRouter(prefix='/chat', tags=['Chat'])
@@ -17,35 +18,92 @@ active_connections: Dict[int, WebSocket] = {}
 async def notify_user(user_id: int, message: dict):
     if user_id in active_connections:
         websocket = active_connections[user_id]
-        await websocket.send_json(message)
+        try:
+            await websocket.send_json(message)
+        except Exception:
+            active_connections.pop(user_id, None)
+
+async def notify_room(room_id: int, message: dict, exclude_user_id: int = None):
+    from app.chat.models import ChatMember
+    async with async_session_maker() as session:
+        query = select(ChatMember.user_id).filter(ChatMember.room_id == room_id)
+        result = await session.execute(query)
+        member_ids = [row[0] for row in result.all()]
+        
+        for user_id in member_ids:
+            if user_id != exclude_user_id:
+                await notify_user(user_id, message)
 
 @router.get("/", response_class=HTMLResponse)
 async def get_chat_page(request: Request, user_data: User = Depends(get_current_user)):
-    dialogs = await DialogsDAO.get_user_dialogs(user_data.id)
-    return templates.TemplateResponse("chat.html", {
+    return templates.TemplateResponse("chat_groups.html", {
         "request": request, 
-        "user": user_data, 
-        "dialogs": dialogs
+        "user": user_data
     })
 
-@router.get("/dialog/{user_id}", response_model=List[MessageRead])
-async def get_dialog_messages(user_id: int, current_user: User = Depends(get_current_user)):
-    return await MessagesDAO.get_messages_between_users(user_id_1=user_id, user_id_2=current_user.id) or []
+@router.get("/chats")
+async def get_user_chats(current_user: User = Depends(get_current_user)):
+    return await ChatRoomDAO.get_user_chats(current_user.id)
 
-@router.post("/messages")
-async def send_message(message: MessageCreate, current_user: User = Depends(get_current_user)):
-    message_data = await MessagesDAO.add_message_to_dialog(
+@router.post("/private/create/{user_id}")
+async def create_private_chat(user_id: int, current_user: User = Depends(get_current_user)):
+    room = await ChatRoomDAO.create_private_chat(current_user.id, [user_id])
+    return room
+
+@router.post("/groups/create")
+async def create_group_chat(room_data: ChatRoomCreate, current_user: User = Depends(get_current_user)):
+    room = await ChatRoomDAO.create_group_chat(
+        name=room_data.name,
+        created_by_id=current_user.id,
+        description=room_data.description
+    )
+    return room
+
+@router.get("/{room_id}/messages")
+async def get_messages(room_id: int, current_user: User = Depends(get_current_user)):
+    messages = await MessagesDAO.get_room_messages(room_id)
+    return messages
+
+@router.post("/{room_id}/messages")
+async def send_message(room_id: int, message: MessageCreate, current_user: User = Depends(get_current_user)):
+    message_data = await MessagesDAO.add_message(
+        room_id=room_id,
         sender_id=current_user.id,
-        recipient_id=message.recipient_id,
         content=message.content
     )
     
-    # created_at уже строка из dao.py, не нужно преобразовывать
+    await notify_room(room_id, message_data, exclude_user_id=current_user.id)
     
-    await notify_user(message.recipient_id, message_data)
-    await notify_user(current_user.id, message_data)
-    
-    return {'status': 'ok', 'message': 'Message saved!'}
+    return message_data
+
+@router.post("/{room_id}/add_member/{user_id}")
+async def add_member_to_room(room_id: int, user_id: int, current_user: User = Depends(get_current_user)):
+    member = await ChatRoomDAO.add_member(room_id, user_id, current_user.id)
+    if not member:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return {'message': 'User added successfully'}
+
+@router.post("/{room_id}/leave")
+async def leave_room(room_id: int, current_user: User = Depends(get_current_user)):
+    is_deleted = await ChatRoomDAO.remove_member(room_id, current_user.id)
+    return {'message': 'Left room successfully', 'deleted': is_deleted}
+
+@router.get("/{room_id}/info")
+async def get_room_info(room_id: int, current_user: User = Depends(get_current_user)):
+    from app.chat.models import ChatRoom
+    async with async_session_maker() as session:
+        query = select(ChatRoom).filter(ChatRoom.id == room_id)
+        result = await session.execute(query)
+        room = result.scalar_one_or_none()
+        if not room:
+            raise HTTPException(status_code=404, detail="Room not found")
+        return {
+            'id': room.id,
+            'name': room.name if room.name else 'Private Chat',
+            'description': room.description,
+            'is_private': room.is_private,
+            'created_by_id': room.created_by_id
+        }
 
 @router.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
@@ -53,6 +111,17 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
     active_connections[user_id] = websocket
     try:
         while True:
-            await asyncio.sleep(1)
+            await asyncio.sleep(30)
     except WebSocketDisconnect:
+        active_connections.pop(user_id, None)
+
+@router.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    await websocket.accept()
+    active_connections[user_id] = websocket
+    try:
+        while True:
+            await asyncio.sleep(30)
+    except (WebSocketDisconnect, asyncio.CancelledError):
+        # Нормальное завершение - просто удаляем соединение
         active_connections.pop(user_id, None)

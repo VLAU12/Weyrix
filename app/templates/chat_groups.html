@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weyrix</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f0f0; }
+        .app { display: flex; height: 100vh; }
+        
+        .sidebar { width: 320px; background: #2c3e50; color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; background: #1a252f; border-bottom: 1px solid #34495e; }
+        .profile-link { color: white; text-decoration: none; display: block; margin-bottom: 15px; }
+        
+        .search-box { padding: 15px; border-bottom: 1px solid #34495e; display: flex; gap: 10px; }
+        .search-box input { flex: 1; padding: 8px; border: none; border-radius: 5px; }
+        .search-box button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        
+        .create-group { padding: 15px; border-bottom: 1px solid #34495e; }
+        .create-group button { width: 100%; padding: 8px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        
+        .chats-list { flex: 1; overflow-y: auto; }
+        .chat-item { padding: 15px; cursor: pointer; border-bottom: 1px solid #34495e; transition: background 0.3s; }
+        .chat-item:hover { background: #34495e; }
+        .chat-item.active { background: #007bff; }
+        .chat-name { font-weight: bold; margin-bottom: 5px; }
+        .chat-preview { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: white; }
+        .chat-header { padding: 20px; background: #007bff; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .room-actions { display: flex; gap: 10px; }
+        .room-actions button { padding: 5px 15px; border: none; border-radius: 5px; cursor: pointer; }
+        .add-member { background: #28a745; color: white; }
+        .leave-chat { background: #dc3545; color: white; }
+        
+        .messages { flex: 1; padding: 20px; overflow-y: auto; background: #f8f9fa; }
+        .message { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .my-message { align-items: flex-end; }
+        .other-message { align-items: flex-start; }
+        .system-message { align-items: center; }
+        .message-bubble { max-width: 60%; padding: 10px 15px; border-radius: 18px; word-wrap: break-word; }
+        .my-message .message-bubble { background: #007bff; color: white; }
+        .other-message .message-bubble { background: #e9ecef; color: black; }
+        .system-message .message-bubble { background: #ffc107; color: black; font-style: italic; }
+        .message-name { font-size: 12px; margin-bottom: 5px; opacity: 0.7; }
+        .message-time { font-size: 10px; margin-top: 5px; opacity: 0.5; }
+        
+        .input-area { display: flex; padding: 20px; background: white; border-top: 1px solid #ddd; gap: 10px; }
+        .input-area input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 25px; }
+        .input-area button { padding: 10px 30px; background: #007bff; color: white; border: none; border-radius: 25px; cursor: pointer; }
+        .input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .welcome { text-align: center; color: #999; padding: 50px; }
+        
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; z-index: 1000; width: 300px; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
+        .modal input, .modal textarea { width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .modal button { padding: 8px 15px; margin: 5px; cursor: pointer; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a href="/auth/profile" class="profile-link"> {{ user.name }} (ID: {{ user.id }})</a>
+        </div>
+        
+        <div class="search-box">
+            <input type="number" id="searchId" placeholder="Введите ID пользователя">
+            <button onclick="startPrivateChat()"> Начать диалог</button>
+        </div>
+        
+        <div class="create-group">
+            <button onclick="showGroupModal()"> Создать групповой чат</button>
+        </div>
+        
+        <div class="chats-list" id="chatsList"></div>
+    </div>
+    
+    <div class="chat-area">
+        <div class="chat-header" id="chatHeader">
+            <span> Выберите чат</span>
+            <div class="room-actions"></div>
+        </div>
+        <div class="messages" id="messages">
+            <div class="welcome">Выберите чат для общения</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Введите сообщение..." disabled>
+            <button id="sendButton" disabled>Отправить</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeGroupModal()"></div>
+<div class="modal" id="groupModal">
+    <h3>Создать групповой чат</h3>
+    <input type="text" id="groupName" placeholder="Название группы">
+    <textarea id="groupDesc" placeholder="Описание" rows="3"></textarea>
+    <div style="display: flex; gap: 10px;">
+        <button onclick="createGroup()" style="background: #28a745; color: white;">Создать</button>
+        <button onclick="closeGroupModal()">Отмена</button>
+    </div>
+</div>
+
+<script>
+    const currentUserId = {{ user.id }};
+    let currentChatId = null;
+    let currentChatIsPrivate = false;
+    let socket = null;
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    async function loadChats() {
+        const response = await fetch('/chat/chats');
+        const chats = await response.json();
+        const container = document.getElementById('chatsList');
+        container.innerHTML = '';
+        
+        for (const chat of chats) {
+            const chatDiv = document.createElement('div');
+            chatDiv.className = 'chat-item' + (currentChatId === chat.id ? ' active' : '');
+            chatDiv.setAttribute('data-chat-id', chat.id);
+            chatDiv.onclick = () => selectChat(chat.id);
+            chatDiv.innerHTML = `
+                <div class="chat-name">${escapeHtml(chat.name)} ${chat.is_private ? '🔒' : '👥'}</div>
+                <div class="chat-preview">${escapeHtml(chat.last_message || 'Новое сообщение')}</div>
+            `;
+            container.appendChild(chatDiv);
+        }
+    }
+    
+    function addMessageToScreen(message) {
+        const container = document.getElementById('messages');
+        const welcome = container.querySelector('.welcome');
+        if (welcome) welcome.remove();
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${message.is_system ? 'system-message' : (message.sender_id === currentUserId ? 'my-message' : 'other-message')}`;
+        messageDiv.innerHTML = `
+            <div class="message-bubble">
+                ${!message.is_system && message.sender_id !== currentUserId ? `<div class="message-name">${escapeHtml(message.sender_name || 'Пользователь')}</div>` : ''}
+                ${escapeHtml(message.content)}
+                <div class="message-time">${new Date(message.created_at).toLocaleTimeString()}</div>
+            </div>
+        `;
+        container.appendChild(messageDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    async function loadMessages(chatId) {
+        const response = await fetch(`/chat/${chatId}/messages`);
+        const messages = await response.json();
+        
+        const container = document.getElementById('messages');
+        container.innerHTML = '';
+        
+        if (messages.length === 0) {
+            container.innerHTML = '<div class="welcome">Напишите первое сообщение!</div>';
+        } else {
+            for (const msg of messages) {
+                addMessageToScreen(msg);
+            }
+        }
+    }
+    
+    async function startPrivateChat() {
+        const userId = document.getElementById('searchId').value;
+        if (!userId) {
+            alert('Введите ID пользователя');
+            return;
+        }
+        
+        if (parseInt(userId) === currentUserId) {
+            alert('Нельзя начать чат с самим собой');
+            return;
+        }
+        
+        const response = await fetch(`/chat/private/create/${userId}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const room = await response.json();
+            document.getElementById('searchId').value = '';
+            await loadChats();
+            selectChat(room.id);
+        } else {
+            alert('Пользователь не найден');
+        }
+    }
+    
+    function showGroupModal() {
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('groupModal').style.display = 'block';
+    }
+    
+    function closeGroupModal() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('groupModal').style.display = 'none';
+        document.getElementById('groupName').value = '';
+        document.getElementById('groupDesc').value = '';
+    }
+    
+    async function createGroup() {
+        const name = document.getElementById('groupName').value;
+        const description = document.getElementById('groupDesc').value;
+        
+        if (!name) {
+            alert('Введите название группы');
+            return;
+        }
+        
+        const response = await fetch('/chat/groups/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description })
+        });
+        
+        if (response.ok) {
+            const room = await response.json();
+            closeGroupModal();
+            await loadChats();
+            selectChat(room.id);
+        } else {
+            alert('Ошибка создания группы');
+        }
+    }
+    
+    async function selectChat(chatId) {
+        if (!chatId) return;
+        
+        currentChatId = chatId;
+        
+        const infoResponse = await fetch(`/chat/${chatId}/info`);
+        const chatInfo = await infoResponse.json();
+        currentChatIsPrivate = chatInfo.is_private;
+        
+        let buttonsHtml = '';
+        if (!currentChatIsPrivate) {
+            buttonsHtml += `<button class="add-member" onclick="addMember()"> Добавить участника</button>`;
+        }
+        const buttonText = currentChatIsPrivate ? ' Удалить чат' : ' Покинуть чат';
+        buttonsHtml += `<button class="leave-chat" onclick="leaveChat()">${buttonText}</button>`;
+        
+        document.getElementById('chatHeader').innerHTML = `
+            <span> ${escapeHtml(chatInfo.name || 'Чат')}</span>
+            <div class="room-actions">${buttonsHtml}</div>
+        `;
+        document.getElementById('messageInput').disabled = false;
+        document.getElementById('sendButton').disabled = false;
+        
+        await loadMessages(chatId);
+        connectWebSocket();
+        
+        document.querySelectorAll('.chat-item').forEach(item => {
+            item.classList.remove('active');
+            if (parseInt(item.getAttribute('data-chat-id')) === chatId) {
+                item.classList.add('active');
+            }
+        });
+    }
+    
+    async function addMember() {
+        const userId = prompt('Введите ID пользователя для добавления в группу:');
+        if (userId && currentChatId) {
+            const response = await fetch(`/chat/${currentChatId}/add_member/${userId}`, {
+                method: 'POST'
+            });
+            const result = await response.json();
+            alert(result.message);
+            if (response.ok) {
+                await loadMessages(currentChatId);
+            }
+        }
+    }
+    
+    async function leaveChat() {
+        const confirmMessage = currentChatIsPrivate ? 
+            'Вы уверены, что хотите удалить этот чат? Все сообщения будут потеряны.' : 
+            'Вы уверены, что хотите покинуть этот чат?';
+        
+        if (confirm(confirmMessage)) {
+            const response = await fetch(`/chat/${currentChatId}/leave`, {
+                method: 'POST'
+            });
+            if (response.ok) {
+                currentChatId = null;
+                await loadChats();
+                document.getElementById('chatHeader').innerHTML = '<span> Выберите чат</span><div class="room-actions"></div>';
+                document.getElementById('messages').innerHTML = '<div class="welcome">Выберите чат для общения</div>';
+                document.getElementById('messageInput').disabled = true;
+                document.getElementById('sendButton').disabled = true;
+                if (socket) {
+                    socket.close();
+                    socket = null;
+                }
+            }
+        }
+    }
+    
+    function connectWebSocket() {
+        if (socket) {
+            socket.close();
+            socket = null;
+        }
+        
+        socket = new WebSocket(`ws://${window.location.host}/chat/ws/${currentUserId}`);
+        
+        socket.onopen = () => {
+            console.log('WebSocket connected');
+        };
+        
+        socket.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                if (msg.room_id === currentChatId) {
+                    addMessageToScreen(msg);
+                    loadChats();
+                }
+            } catch (e) {
+                console.error('Error parsing message:', e);
+            }
+        };
+        
+        socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+        
+        socket.onclose = () => {
+            console.log('WebSocket disconnected');
+            setTimeout(() => {
+                if (currentChatId) {
+                    connectWebSocket();
+                }
+            }, 3000);
+        };
+    }
+    
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        
+        if (message && currentChatId) {
+            const tempMessage = {
+                id: Date.now(),
+                room_id: currentChatId,
+                sender_id: currentUserId,
+                content: message,
+                created_at: new Date().toISOString(),
+                is_system: false
+            };
+            
+            addMessageToScreen(tempMessage);
+            input.value = '';
+            
+            try {
+                const response = await fetch(`/chat/${currentChatId}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: message })
+                });
+                
+                if (response.ok) {
+                    loadChats();
+                } else {
+                    alert('Ошибка при отправке сообщения');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ошибка сети при отправке');
+            }
+        }
+    }
+    
+    document.getElementById('sendButton').onclick = sendMessage;
+    document.getElementById('messageInput').onkeypress = (e) => {
+        if (e.key === 'Enter') sendMessage();
+    };
+    
+    loadChats();
+</script>
+</body>
+</html>

@@ -4,18 +4,23 @@ from typing import Optional
 
 class MessageRead(BaseModel):
     id: int
+    room_id: int
     sender_id: int
-    recipient_id: int
     content: str
     created_at: Optional[datetime] = None
+    is_system: bool = False
 
 class MessageCreate(BaseModel):
-    recipient_id: int
     content: str
 
-class DialogRead(BaseModel):
-    dialog_id: int
-    user_id: int
-    user_name: str
-    last_message: Optional[str] = ""
-    last_message_time: Optional[datetime] = None
+class ChatRoomCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = None
+
+class ChatRoomRead(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    created_by_id: int
+    created_at: datetime
+    is_private: bool
