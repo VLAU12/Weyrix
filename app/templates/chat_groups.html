@@ -417,8 +417,16 @@
             
             if (response.ok) {
                 const data = await response.json();
-
-                await sendMessageWithFile(data.file_url);
+                const fileName = file.name;
+                const fileUrl = data.file_url;
+                
+                const message = `📎 Файл: ${fileName}\n${fileUrl}`;
+                
+                await fetch(`/chat/${currentChatId}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: message })
+                });
             }
         } catch (error) {
             console.error('Upload error:', error);
@@ -538,6 +546,16 @@
             })
             .catch(err => console.error('Language load error:', err));
     }
+
+    // Обработка кликов по ссылкам на файлы
+    messagesDiv.addEventListener('click', (e) => {
+        const link = e.target.closest('.file-link');
+        if (link) {
+            e.preventDefault();
+            const url = link.getAttribute('href');
+            window.open(url, '_blank');
+        }
+    });
     
 
     loadThemeOnStart();
