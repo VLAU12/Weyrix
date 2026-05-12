@@ -9,11 +9,32 @@ from app.users.models import User
 from app.database import async_session_maker
 from sqlalchemy import select
 import asyncio
+from fastapi import File, UploadFile
+import os
+import shutil
+from datetime import datetime
+from fastapi.responses import FileResponse
 
 router = APIRouter(prefix='/chat', tags=['Chat'])
 templates = Jinja2Templates(directory='app/templates')
 
 active_connections: Dict[int, WebSocket] = {}
+
+
+UPLOAD_DIR = "uploads"
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@router.post("/upload")
+async def upload_file(file: UploadFile = File(...), room_id: int = None):
+    # Сохраняем с оригинальным именем
+    safe_filename = f"{datetime.now().timestamp()}_{file.filename.replace(' ', '_')}"
+    file_path = os.path.join(UPLOAD_DIR, safe_filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    return {"file_url": f"/uploads/{safe_filename}"}
 
 async def notify_user(user_id: int, message: dict):
     if user_id in active_connections:
@@ -125,3 +146,10 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
     except (WebSocketDisconnect, asyncio.CancelledError):
         # Нормальное завершение - просто удаляем соединение
         active_connections.pop(user_id, None)
+
+@router.get("/download/{filename}")
+async def download_file(filename: str):
+    file_path = os.path.join("uploads", filename)
+    if os.path.exists(file_path):
+        return FileResponse(file_path, filename=filename)
+    return {"error": "File not found"}

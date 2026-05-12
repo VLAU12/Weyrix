@@ -127,10 +127,10 @@ async function selectChat(chatId) {
     const chatInfo = await infoResponse.json();
     
     document.getElementById('chatHeader').innerHTML = `
-        <span>💬 ${chatInfo.name || 'Чат'}</span>
+        <span> ${chatInfo.name || 'Чат'}</span>
         <div class="room-actions">
-            <button class="add-member" onclick="addMember()">➕ Добавить участника</button>
-            <button class="leave-chat" onclick="leaveChat()">🚪 Покинуть чат</button>
+            <button class="add-member" onclick="addMember()"> Добавить участника</button>
+            <button class="leave-chat" onclick="leaveChat()"> Покинуть чат</button>
         </div>
     `;
     document.getElementById('messageInput').disabled = false;

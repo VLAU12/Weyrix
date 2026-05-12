@@ -1,16 +1,24 @@
-from fastapi import APIRouter, Response, Request, Depends
+from fastapi import APIRouter, Response, Request, Depends, File, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from typing import List
+from sqlalchemy import update
 from app.exceptions import UserAlreadyExistsException, IncorrectEmailOrPasswordException, PasswordMismatchException
 from app.users.auth import get_password_hash, authenticate_user, create_access_token
 from app.users.dao import UsersDAO
 from app.users.schemas import SUserRegister, SUserAuth, SUserRead
 from app.users.dependencies import get_current_user
 from app.users.models import User
+from app.database import async_session_maker
+import os
+import shutil
 
 router = APIRouter(prefix='/auth', tags=['Auth'])
 templates = Jinja2Templates(directory='app/templates')
+
+# Папка для аватаров
+UPLOAD_DIR = "uploads/avatars"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.get("/", response_class=HTMLResponse)
 async def get_auth_page(request: Request):
@@ -61,3 +69,40 @@ async def search_user(user_id: int):
     if user:
         return {'id': user.id, 'name': user.name, 'email': user.email}
     return None
+
+@router.post("/update_name")
+async def update_name(name_data: dict, current_user: User = Depends(get_current_user)):
+    async with async_session_maker() as session:
+        async with session.begin():
+            query = update(User).where(User.id == current_user.id).values(name=name_data['name'])
+            await session.execute(query)
+            await session.commit()
+    return {'message': 'Name updated'}
+
+@router.post("/update_email")
+async def update_email(email_data: dict, current_user: User = Depends(get_current_user)):
+    async with async_session_maker() as session:
+        async with session.begin():
+            query = update(User).where(User.id == current_user.id).values(email=email_data['email'])
+            await session.execute(query)
+            await session.commit()
+    return {'message': 'Email updated'}
+
+@router.post("/upload_avatar")
+async def upload_avatar(avatar: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    # Сохраняем файл с правильным расширением
+    file_ext = os.path.splitext(avatar.filename)[1]
+    filename = f"{current_user.id}_{int(datetime.now().timestamp())}{file_ext}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(avatar.file, buffer)
+    
+    # Обновляем путь в БД (только имя файла, не полный путь)
+    async with async_session_maker() as session:
+        async with session.begin():
+            query = update(User).where(User.id == current_user.id).values(avatar=filename)
+            await session.execute(query)
+            await session.commit()
+    
+    return {"avatar_url": f"/uploads/avatars/{filename}"}

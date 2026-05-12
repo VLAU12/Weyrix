@@ -6,9 +6,11 @@ from fastapi.staticfiles import StaticFiles
 from app.exceptions import TokenExpiredException, TokenNoFoundException
 from app.users.router import router as users_router
 from app.chat.router import router as chat_router
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 app.mount('/static', StaticFiles(directory='app/static'), name='static')
+app.mount('/uploads', StaticFiles(directory='uploads'), name='uploads')
 
 app.add_middleware(
     CORSMiddleware,

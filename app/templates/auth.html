@@ -1,187 +1,176 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход и Регистрация</title>
+    <title>Weyrix - Вход и регистрация</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/themes/dark.css" id="theme-style">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; cursor: pointer; }
-        .tab { padding: 10px 20px; background: #f0f0f0; border-radius: 5px; }
-        .tab.active { background: #007bff; color: white; }
-        .form { display: none; }
-        .form.active { display: block; }
-        input { width: 100%; padding: 8px; margin: 5px 0 15px 0; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        .message { margin-top: 10px; padding: 10px; border-radius: 4px; }
-        .error { background: #ffebee; color: #c62828; }
-        .success { background: #e8f5e9; color: #2e7d32; }
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg-chat);
+        }
+        .auth-card {
+            background: var(--bg-sidebar);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: var(--accent-primary);
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            background: var(--bg-input);
+            border-radius: 8px;
+            transition: all 0.3s;
+            color: var(--text-primary);
+        }
+        .tab.active {
+            background: var(--accent-primary);
+            color: white;
+        }
+        .form {
+            display: none;
+        }
+        .form.active {
+            display: block;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
-    <h1>Мини-чат</h1>
-    
-    <div class="tabs">
-        <div class="tab active" data-tab="login">Авторизация</div>
-        <div class="tab" data-tab="register">Регистрация</div>
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="logo">.</div>
+        <h1>WEYRIX</h1>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="login">Вход</div>
+            <div class="tab" data-tab="register">Регистрация</div>
+        </div>
+        
+        <div id="loginForm" class="form active">
+            <input type="email" id="loginEmail" placeholder="Email">
+            <input type="password" id="loginPassword" placeholder="Пароль">
+            <button id="loginButton">Войти</button>
+        </div>
+        
+        <div id="registerForm" class="form">
+            <input type="email" id="regEmail" placeholder="Email">
+            <input type="text" id="regName" placeholder="Имя">
+            <input type="password" id="regPassword" placeholder="Пароль">
+            <input type="password" id="regPasswordCheck" placeholder="Повторите пароль">
+            <button id="registerButton">Зарегистрироваться</button>
+        </div>
     </div>
-    
-    <div id="loginForm" class="form active">
-        <h2>Вход</h2>
-        <input type="email" id="loginEmail" placeholder="Email">
-        <input type="password" id="loginPassword" placeholder="Пароль">
-        <button id="loginButton">Войти</button>
-    </div>
-    
-    <div id="registerForm" class="form">
-        <h2>Регистрация</h2>
-        <input type="email" id="regEmail" placeholder="Email">
-        <input type="text" id="regName" placeholder="Имя">
-        <input type="password" id="regPassword" placeholder="Пароль">
-        <input type="password" id="regPasswordCheck" placeholder="Повторите пароль">
-        <button id="registerButton">Зарегистрироваться</button>
-    </div>
-    
-    <div id="messageDiv"></div>
+</div>
 
-    <script>
-        // Получаем элементы
-        const tabs = document.querySelectorAll('.tab');
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-        const loginButton = document.getElementById('loginButton');
-        const registerButton = document.getElementById('registerButton');
-        
-        // Функция переключения вкладок
-        function switchTab(tabName) {
-            // Убираем активный класс у всех вкладок
-            tabs.forEach(tab => tab.classList.remove('active'));
-            
-            // Находим нужную вкладку и добавляем ей активный класс
-            const activeTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
-            if (activeTab) activeTab.classList.add('active');
-            
-            // Скрываем все формы
-            loginForm.classList.remove('active');
+<script>
+    const tabs = document.querySelectorAll('.tab');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    
+    function switchTab(tabName) {
+        tabs.forEach(tab => tab.classList.remove('active'));
+        document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+        if (tabName === 'login') {
+            loginForm.classList.add('active');
             registerForm.classList.remove('active');
-            
-            // Показываем нужную форму
-            if (tabName === 'login') {
-                loginForm.classList.add('active');
-            } else if (tabName === 'register') {
-                registerForm.classList.add('active');
-            }
+        } else {
+            registerForm.classList.add('active');
+            loginForm.classList.remove('active');
         }
-        
-        // Добавляем обработчики на вкладки
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                const tabName = this.getAttribute('data-tab');
-                switchTab(tabName);
-            });
+    }
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.getAttribute('data-tab')));
+    });
+    
+    document.getElementById('registerButton').onclick = async () => {
+        const data = {
+            email: document.getElementById('regEmail').value,
+            name: document.getElementById('regName').value,
+            password: document.getElementById('regPassword').value,
+            password_check: document.getElementById('regPasswordCheck').value
+        };
+        const response = await fetch('/auth/register/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
         });
-        
-        // Функция регистрации
-        async function register() {
-            const email = document.getElementById('regEmail').value;
-            const name = document.getElementById('regName').value;
-            const password = document.getElementById('regPassword').value;
-            const password_check = document.getElementById('regPasswordCheck').value;
-            
-            const data = {
-                email: email,
-                name: name,
-                password: password,
-                password_check: password_check
-            };
-            
-            try {
-                const response = await fetch('/auth/register/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    alert('Регистрация успешна! Теперь войдите.');
-                    // Очищаем поля формы регистрации
-                    document.getElementById('regEmail').value = '';
-                    document.getElementById('regName').value = '';
-                    document.getElementById('regPassword').value = '';
-                    document.getElementById('regPasswordCheck').value = '';
-                    // Переключаем на форму входа
-                    switchTab('login');
-                } else {
-                    alert('Ошибка: ' + (result.detail || 'Проверьте введенные данные'));
-                }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                alert('Ошибка при отправке: ' + error.message);
-            }
+        const result = await response.json();
+        if (response.ok) {
+            alert('Регистрация успешна! Теперь войдите.');
+            switchTab('login');
+        } else {
+            alert(result.detail || 'Ошибка регистрации');
         }
-        
-        // Функция входа
-        async function login() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            const data = {
-                email: email,
-                password: password
-            };
-            
-            try {
-                const response = await fetch('/auth/login/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    alert('Вход выполнен успешно!');
-                    window.location.href = '/chat';
-                } else {
-                    alert('Ошибка: ' + (result.detail || 'Неверный email или пароль'));
-                }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                alert('Ошибка при отправке: ' + error.message);
-            }
+    };
+    
+    document.getElementById('loginButton').onclick = async () => {
+        const data = {
+            email: document.getElementById('loginEmail').value,
+            password: document.getElementById('loginPassword').value
+        };
+        const response = await fetch('/auth/login/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (response.ok) {
+            window.location.href = '/chat';
+        } else {
+            alert(result.detail || 'Неверный email или пароль');
         }
-        
-        // Назначаем обработчики на кнопки
-        loginButton.addEventListener('click', login);
-        registerButton.addEventListener('click', register);
-        
-        // Добавляем обработку Enter
-        document.getElementById('loginEmail').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') login();
-        });
-        document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') login();
-        });
-        
-        document.getElementById('regEmail').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') register();
-        });
-        document.getElementById('regName').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') register();
-        });
-        document.getElementById('regPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') register();
-        });
-        document.getElementById('regPasswordCheck').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') register();
-        });
-    </script>
+    };
+</script>
 </body>
 </html>

@@ -1,0 +1,39 @@
+:root {
+    --bg-sidebar: #1a1d21;
+    --bg-chat: #0f1215;
+    --bg-header: #1a1d21;
+    --bg-input-area: #1a1d21;
+    --bg-input: #252a2f;
+    
+    --my-message-bg: #0f5c3b;
+    --my-message-text: #ffffff;
+    --other-message-bg: #252a2f;
+    --other-message-text: #e8eaed;
+    --system-message-bg: #1a1d21;
+    --system-message-text: #8a8f99;
+    
+    --accent-primary: #1a7f4b;
+    --accent-secondary: #0f5c3b;
+    --accent-light: rgba(26, 127, 75, 0.15);
+    --hover-bg: rgba(255, 255, 255, 0.05);
+    --border-color: #2a2f35;
+    
+    --text-primary: #e8eaed;
+    --text-secondary: #8a8f99;
+    --error: #dc2626;
+}
+
+body {
+    background: var(--bg-chat);
+}
+
+.file-link {
+    color: var(--accent-primary);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--accent-primary);
+}
+
+.file-link:hover {
+    color: var(--accent-secondary);
+    border-bottom: 1px solid var(--accent-secondary);
+}

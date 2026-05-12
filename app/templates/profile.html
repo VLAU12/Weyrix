@@ -3,46 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой профиль</title>
+    <title data-i18n="profile">Аккаунт</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/themes/dark.css" id="theme-style">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; margin-bottom: 20px; }
-        .info { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        .info p { margin: 10px 0; font-size: 16px; }
-        .label { font-weight: bold; color: #555; }
-        .value { color: #333; }
-        .id-card { background: #007bff; color: white; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
-        .id-card .id-number { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
-        .menu { display: flex; gap: 10px; margin-top: 20px; }
-        .menu a, .menu button { flex: 1; text-align: center; padding: 10px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
-        .menu button:hover, .menu a:hover { background: #0056b3; }
-        .logout { background: #dc3545; }
-        .logout:hover { background: #c82333; }
+        .profile-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg-chat);
+        }
+        .profile-card {
+            background: var(--bg-sidebar);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .avatar:hover {
+            opacity: 0.8;
+        }
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .avatar-edit {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .info-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .info-item:hover {
+            background: var(--hover-bg);
+        }
+        .info-label {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .id-card {
+            background: var(--accent-primary);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin: 20px 0;
+        }
+        .menu-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .menu-buttons a, .menu-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            background: var(--accent-primary);
+            color: white;
+        }
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            width: 300px;
+            z-index: 2000;
+        }
+        .edit-modal input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+        }
+        .edit-modal button {
+            padding: 10px;
+            margin-top: 10px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .avatar-input {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Мой профиль</h1>
+<div class="profile-container">
+    <div class="profile-card">
+        <div class="avatar-container">
+            <div class="avatar" id="avatarBtn">
+                {% if user.avatar %}
+                    <img src="/uploads/avatars/{{ user.avatar }}" alt="avatar" class="avatar-img" id="avatarImg">
+                {% else %}
+                    <span id="avatarText" style="font-size: 48px;">👤</span>
+                {% endif %}
+            </div>
+            <div class="avatar-edit" id="editAvatarBtn">✏️</div>
+        </div>
         
         <div class="id-card">
-            <div>Ваш ID для поиска:</div>
-            <div class="id-number">#{{ user.id }}</div>
+            <div class="info-label" data-i18n="your_id">Ваш ID</div>
+            <div class="info-value" style="font-size: 24px;">{{ user.id }}</div>
         </div>
         
-        <div class="info">
-            <p><span class="label">Имя:</span> <span class="value">{{ user.name }}</span></p>
-            <p><span class="label">Email:</span> <span class="value">{{ user.email }}</span></p>
-            <p><span class="label">ID в системе:</span> <span class="value">{{ user.id }}</span></p>
+        <div class="info-item" id="editNameBtn">
+            <div class="info-label" data-i18n="name">Имя</div>
+            <div class="info-value" id="userName">{{ user.name }}</div>
         </div>
         
-        <div class="menu">
-            <a href="/chat">Перейти в чат</a>
-            <form action="/auth/logout/" method="post" style="flex: 1;">
-                <button type="submit" class="logout">Выйти</button>
-            </form>
+        <div class="info-item" id="editEmailBtn">
+            <div class="info-label">Email</div>
+            <div class="info-value" id="userEmail">{{ user.email }}</div>
+        </div>
+        
+        <div class="menu-buttons">
+            <a href="/chat" data-i18n="chat">💬 Чат</a>
+            <button id="logoutBtn" data-i18n="logout"> Выйти</button>
         </div>
     </div>
+</div>
+
+<!-- Модальное окно для смены имени -->
+<div class="edit-modal" id="nameModal">
+    <h3 data-i18n="change_name">Сменить имя</h3>
+    <input type="text" id="newName" data-i18n="new_name" placeholder="Новое имя">
+    <button id="saveNameBtn" data-i18n="update">Обновить</button>
+    <button id="cancelNameBtn" data-i18n="cancel">Отмена</button>
+</div>
+
+<!-- Модальное окно для смены email -->
+<div class="edit-modal" id="emailModal">
+    <h3 data-i18n="change_email">Сменить email</h3>
+    <input type="email" id="newEmail" data-i18n="new_email" placeholder="Новый email">
+    <button id="saveEmailBtn" data-i18n="update">Обновить</button>
+    <button id="cancelEmailBtn" data-i18n="cancel">Отмена</button>
+</div>
+
+<!-- Скрытый input для аватара -->
+<input type="file" id="avatarInput" accept="image/*" style="display: none;">
+
+<script src="/static/js/settings.js"></script>
+<script>
+    const currentUserId = {{ user.id }};
+    const avatarInput = document.getElementById('avatarInput');
+    const avatarBtn = document.getElementById('avatarBtn');
+    const editAvatarBtn = document.getElementById('editAvatarBtn');
+    const editNameBtn = document.getElementById('editNameBtn');
+    const editEmailBtn = document.getElementById('editEmailBtn');
+    const nameModal = document.getElementById('nameModal');
+    const emailModal = document.getElementById('emailModal');
+    const newName = document.getElementById('newName');
+    const newEmail = document.getElementById('newEmail');
+    const saveNameBtn = document.getElementById('saveNameBtn');
+    const saveEmailBtn = document.getElementById('saveEmailBtn');
+    const cancelNameBtn = document.getElementById('cancelNameBtn');
+    const cancelEmailBtn = document.getElementById('cancelEmailBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userNameSpan = document.getElementById('userName');
+    const userEmailSpan = document.getElementById('userEmail');
+    const avatarImg = document.getElementById('avatarImg');
+    const avatarText = document.getElementById('avatarText');
+    
+    // Функция закрытия модальных окон
+    function closeModals() {
+        nameModal.style.display = 'none';
+        emailModal.style.display = 'none';
+    }
+    
+    // Смена имени
+    editNameBtn.addEventListener('click', () => {
+        newName.value = userNameSpan.textContent;
+        nameModal.style.display = 'block';
+    });
+    
+    saveNameBtn.addEventListener('click', async () => {
+        const name = newName.value.trim();
+        if (name) {
+            const response = await fetch('/auth/update_name', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name })
+            });
+            if (response.ok) {
+                userNameSpan.textContent = name;
+                alert(document.querySelector('[data-i18n="profile_updated"]')?.textContent || 'Профиль обновлён');
+                closeModals();
+            }
+        }
+    });
+    
+    // Смена email
+    editEmailBtn.addEventListener('click', () => {
+        newEmail.value = userEmailSpan.textContent;
+        emailModal.style.display = 'block';
+    });
+    
+    saveEmailBtn.addEventListener('click', async () => {
+        const email = newEmail.value.trim();
+        if (email) {
+            const response = await fetch('/auth/update_email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            });
+            if (response.ok) {
+                userEmailSpan.textContent = email;
+                alert(document.querySelector('[data-i18n="profile_updated"]')?.textContent || 'Профиль обновлён');
+                closeModals();
+            }
+        }
+    });
+    
+    // Загрузка аватара
+    function uploadAvatar(file) {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        formData.append('user_id', currentUserId);
+        
+        fetch('/auth/upload_avatar', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.avatar_url) {
+                if (avatarImg) {
+                    avatarImg.src = data.avatar_url;
+                    avatarImg.style.display = 'block';
+                }
+                if (avatarText) avatarText.style.display = 'none';
+                alert(document.querySelector('[data-i18n="avatar_uploaded"]')?.textContent || 'Аватар загружен');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    editAvatarBtn.addEventListener('click', () => avatarInput.click());
+    avatarInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) uploadAvatar(e.target.files[0]);
+        e.target.value = '';
+    });
+    
+    // Выход
+    logoutBtn.addEventListener('click', async () => {
+        await fetch('/auth/logout/', { method: 'POST' });
+        window.location.href = '/auth';
+    });
+    
+    // Закрытие модальных окон по клику вне
+    document.addEventListener('click', (e) => {
+        if (!nameModal.contains(e.target) && e.target !== editNameBtn && !editNameBtn.contains(e.target)) {
+            nameModal.style.display = 'none';
+        }
+        if (!emailModal.contains(e.target) && e.target !== editEmailBtn && !editEmailBtn.contains(e.target)) {
+            emailModal.style.display = 'none';
+        }
+    });
+    
+    cancelNameBtn.addEventListener('click', closeModals);
+    cancelEmailBtn.addEventListener('click', closeModals);
+    
+    // Загрузка темы и языка
+    function loadThemeOnStart() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        const themeLink = document.getElementById('theme-style');
+        if (themeLink) themeLink.href = `/static/css/themes/${savedTheme}.css`;
+    }
+    
+    function loadLanguageOnStart() {
+        const savedLanguage = localStorage.getItem('language') || 'ru';
+        fetch(`/static/i18n/${savedLanguage}.json`)
+            .then(response => response.json())
+            .then(translations => {
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (translations[key]) {
+                        if (el.tagName === 'INPUT' && el.placeholder) {
+                            el.placeholder = translations[key];
+                        } else {
+                            el.textContent = translations[key];
+                        }
+                    }
+                });
+                document.title = translations.app_name || 'Weyrix';
+            })
+            .catch(err => console.error('Language load error:', err));
+    }
+    
+    loadThemeOnStart();
+    loadLanguageOnStart();
+</script>
 </body>
 </html>
