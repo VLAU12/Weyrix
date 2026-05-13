@@ -159,8 +159,8 @@
         </div>
         
         <div class="id-card">
-            <div class="info-label" data-i18n="your_id">Ваш ID</div>
-            <div class="info-value" style="font-size: 24px;">{{ user.id }}</div>
+            <div class="info-label" data-i18n="your_id">Ваш ID для поиска</div>
+            <div class="info-value" style="font-size: 24px;">{{ user.user_tag }}</div>
         </div>
         
         <div class="info-item" id="editNameBtn">
@@ -175,7 +175,7 @@
         
         <div class="menu-buttons">
             <a href="/chat" data-i18n="chat">💬 Чат</a>
-            <button id="logoutBtn" data-i18n="logout"> Выйти</button>
+            <button id="logoutBtn" data-i18n="logout">🚪 Выйти</button>
         </div>
     </div>
 </div>
@@ -196,7 +196,6 @@
     <button id="cancelEmailBtn" data-i18n="cancel">Отмена</button>
 </div>
 
-<!-- Скрытый input для аватара -->
 <input type="file" id="avatarInput" accept="image/*" style="display: none;">
 
 <script src="/static/js/settings.js"></script>
@@ -221,13 +220,11 @@
     const avatarImg = document.getElementById('avatarImg');
     const avatarText = document.getElementById('avatarText');
     
-    // Функция закрытия модальных окон
     function closeModals() {
         nameModal.style.display = 'none';
         emailModal.style.display = 'none';
     }
     
-    // Смена имени
     editNameBtn.addEventListener('click', () => {
         newName.value = userNameSpan.textContent;
         nameModal.style.display = 'block';
@@ -243,13 +240,12 @@
             });
             if (response.ok) {
                 userNameSpan.textContent = name;
-                alert(document.querySelector('[data-i18n="profile_updated"]')?.textContent || 'Профиль обновлён');
+                alert('Профиль обновлён');
                 closeModals();
             }
         }
     });
     
-    // Смена email
     editEmailBtn.addEventListener('click', () => {
         newEmail.value = userEmailSpan.textContent;
         emailModal.style.display = 'block';
@@ -265,17 +261,15 @@
             });
             if (response.ok) {
                 userEmailSpan.textContent = email;
-                alert(document.querySelector('[data-i18n="profile_updated"]')?.textContent || 'Профиль обновлён');
+                alert('Профиль обновлён');
                 closeModals();
             }
         }
     });
     
-    // Загрузка аватара
     function uploadAvatar(file) {
         const formData = new FormData();
         formData.append('avatar', file);
-        formData.append('user_id', currentUserId);
         
         fetch('/auth/upload_avatar', {
             method: 'POST',
@@ -289,7 +283,7 @@
                     avatarImg.style.display = 'block';
                 }
                 if (avatarText) avatarText.style.display = 'none';
-                alert(document.querySelector('[data-i18n="avatar_uploaded"]')?.textContent || 'Аватар загружен');
+                alert('Аватар загружен');
             }
         })
         .catch(error => console.error('Error:', error));
@@ -301,13 +295,11 @@
         e.target.value = '';
     });
     
-    // Выход
     logoutBtn.addEventListener('click', async () => {
         await fetch('/auth/logout/', { method: 'POST' });
         window.location.href = '/auth';
     });
     
-    // Закрытие модальных окон по клику вне
     document.addEventListener('click', (e) => {
         if (!nameModal.contains(e.target) && e.target !== editNameBtn && !editNameBtn.contains(e.target)) {
             nameModal.style.display = 'none';
@@ -320,7 +312,6 @@
     cancelNameBtn.addEventListener('click', closeModals);
     cancelEmailBtn.addEventListener('click', closeModals);
     
-    // Загрузка темы и языка
     function loadThemeOnStart() {
         const savedTheme = localStorage.getItem('theme') || 'dark';
         const themeLink = document.getElementById('theme-style');

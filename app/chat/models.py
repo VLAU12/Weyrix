@@ -2,6 +2,9 @@ from sqlalchemy import Integer, Text, ForeignKey, DateTime, Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 from app.database import Base
+from sqlalchemy import Integer, Text, ForeignKey, DateTime, Boolean
+from datetime import datetime
+
 
 class ChatRoom(Base):
     __tablename__ = 'chat_rooms'
@@ -35,3 +38,4 @@ class Message(Base):
     content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     is_system: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_favorite: Mapped[bool] = mapped_column(Boolean, default=False)

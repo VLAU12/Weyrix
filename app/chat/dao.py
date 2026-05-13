@@ -8,7 +8,7 @@ class ChatRoomDAO(BaseDAO):
     model = ChatRoom
     
     @classmethod
-    async def create_private_chat(cls, created_by_id: int, member_ids: list = None):
+    async def create_private_chat(cls, created_by_id: str, member_ids: list = None):
         async with async_session_maker() as session:
             async with session.begin():
                 if member_ids and len(member_ids) == 1:
@@ -52,7 +52,7 @@ class ChatRoomDAO(BaseDAO):
                 return room
     
     @classmethod
-    async def create_group_chat(cls, name: str, created_by_id: int, description: str = None):
+    async def create_group_chat(cls, name: str, created_by_id: str, description: str = None):
         async with async_session_maker() as session:
             async with session.begin():
                 room = ChatRoom(
@@ -71,7 +71,7 @@ class ChatRoomDAO(BaseDAO):
                 return room
     
     @classmethod
-    async def get_user_chats(cls, user_id: int):
+    async def get_user_chats(cls, user_id: str):
         async with async_session_maker() as session:
             query = select(ChatRoom).join(ChatMember).filter(
                 and_(
@@ -116,7 +116,7 @@ class ChatRoomDAO(BaseDAO):
             return result_list
     
     @classmethod
-    async def add_member(cls, room_id: int, user_id: int, current_user_id: int = None):
+    async def add_member(cls, room_id: int, user_id: str, current_user_id: str = None):
         async with async_session_maker() as session:
             async with session.begin():
                 room_query = select(ChatRoom).filter(and_(ChatRoom.id == room_id, ChatRoom.is_active == True))
@@ -146,7 +146,7 @@ class ChatRoomDAO(BaseDAO):
                 system_msg = Message(
                     room_id=room_id,
                     sender_id=user_id,
-                    content=f" Пользователь {user_name} присоединился к чату",
+                    content=f"👤 Пользователь {user_name} присоединился к чату",
                     is_system=True
                 )
                 session.add(system_msg)
@@ -155,7 +155,7 @@ class ChatRoomDAO(BaseDAO):
                 return member
     
     @classmethod
-    async def remove_member(cls, room_id: int, user_id: int):
+    async def remove_member(cls, room_id: int, user_id: str):
         async with async_session_maker() as session:
             async with session.begin():
                 query = delete(ChatMember).where(
@@ -181,7 +181,7 @@ class ChatRoomDAO(BaseDAO):
                 system_msg = Message(
                     room_id=room_id,
                     sender_id=user_id,
-                    content=f" Пользователь {user_name} покинул чат",
+                    content=f"👋 Пользователь {user_name} покинул чат",
                     is_system=True
                 )
                 session.add(system_msg)
@@ -203,7 +203,7 @@ class MessagesDAO(BaseDAO):
             return list(result.scalars().all())
     
     @classmethod
-    async def add_message(cls, room_id: int, sender_id: int, content: str, is_system: bool = False):
+    async def add_message(cls, room_id: int, sender_id: str, content: str, is_system: bool = False):
         async with async_session_maker() as session:
             async with session.begin():
                 message = Message(

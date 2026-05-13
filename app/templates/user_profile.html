@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="profile">Профиль пользователя</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/themes/dark.css" id="theme-style">
+    <style>
+        .profile-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg-chat);
+        }
+        .profile-card {
+            background: var(--bg-sidebar);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 48px;
+        }
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .info-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            text-align: left;
+        }
+        .info-label {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .id-card {
+            background: var(--accent-primary);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin: 20px 0;
+        }
+        .menu-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .menu-buttons a, .menu-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            background: var(--accent-primary);
+            color: white;
+        }
+        .back-btn {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+<div class="profile-container">
+    <div class="profile-card">
+        <div class="avatar">
+            {% if profile_user.avatar %}
+                <img src="/uploads/avatars/{{ profile_user.avatar }}" alt="avatar" class="avatar-img">
+            {% else %}
+                👤
+            {% endif %}
+        </div>
+        
+        <div class="id-card">
+            <div class="info-label" data-i18n="your_id">ID пользователя</div>
+            <div class="info-value" style="font-size: 24px;">{{ profile_user.user_tag }}</div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label" data-i18n="name">Имя</div>
+            <div class="info-value">{{ profile_user.name }}</div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">Email</div>
+            <div class="info-value">{{ profile_user.email }}</div>
+        </div>
+        
+        <div class="menu-buttons">
+            <button class="chat-btn" onclick="startChat()" data-i18n="send_message">💬 Написать сообщение</button>            
+            <a href="/chat" class="back-btn" data-i18n="back">← Назад</a>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/settings.js"></script>
+<script>
+    const profileUserId = {{ profile_user.id }};
+    const currentUserId = {{ current_user.id }};
+    
+    async function startChat() {
+        const response = await fetch(`/chat/private/create/${profileUserId}`, { method: 'POST' });
+        if (response.ok) {
+            window.location.href = '/chat';
+        } else {
+            alert('Не удалось начать чат');
+        }
+    }
+    
+    // Обновляем переводы после загрузки
+    if (typeof updateTranslations === 'function') {
+        setTimeout(() => updateTranslations(), 100);
+    }
+</script>
+</body>
+</html>

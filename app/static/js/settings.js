@@ -1,43 +1,54 @@
-let currentLanguage = localStorage.getItem('language') || 'ru';
-let currentTheme = localStorage.getItem('theme') || 'dark';
-
-function loadLanguage() {
-    fetch(`/static/i18n/${currentLanguage}.json`)
-        .then(response => response.json())
-        .then(translations => {
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (translations[key]) {
-                    if (el.tagName === 'INPUT' && el.placeholder) {
-                        el.placeholder = translations[key];
-                    } else {
-                        el.textContent = translations[key];
-                    }
-                }
-            });
-            document.title = translations.app_name;
-        });
-}
+// Настройки темы и языка
+let currentTranslations = {};
 
 function loadTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
     const themeLink = document.getElementById('theme-style');
-    if (!themeLink) {
-        const link = document.createElement('link');
-        link.id = 'theme-style';
-        link.rel = 'stylesheet';
-        link.href = `/static/css/themes/${currentTheme}.css`;
-        document.head.appendChild(link);
-    } else {
-        themeLink.href = `/static/css/themes/${currentTheme}.css`;
+    if (themeLink) {
+        themeLink.href = `/static/css/themes/${savedTheme}.css`;
     }
-    document.body.setAttribute('data-theme', currentTheme);
+}
+
+function loadLanguage() {
+    const savedLanguage = localStorage.getItem('language') || 'ru';
+    fetch(`/static/i18n/${savedLanguage}.json`)
+        .then(response => response.json())
+        .then(translations => {
+            currentTranslations = translations;
+            updateAllTranslations();
+            document.title = translations.app_name || 'Weyrix';
+        })
+        .catch(err => console.error('Language load error:', err));
+}
+
+function updateAllTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (currentTranslations[key]) {
+            // Сохраняем эмодзи, если они есть
+            const emojiMatch = el.innerHTML.match(/^[🔒👥💬⭐📎📝🗑️🚪➕👤❌←\s]+/);
+            const emoji = emojiMatch ? emojiMatch[0] : '';
+            
+            if (el.tagName === 'INPUT' && el.placeholder) {
+                el.placeholder = currentTranslations[key];
+            } else if (el.tagName === 'BUTTON') {
+                if (emoji) {
+                    el.innerHTML = `${emoji} ${currentTranslations[key]}`;
+                } else {
+                    el.textContent = currentTranslations[key];
+                }
+            } else {
+                el.textContent = currentTranslations[key];
+            }
+        }
+    });
 }
 
 function openSettings() {
     document.getElementById('settingsModal').style.display = 'block';
     document.getElementById('settingsOverlay').style.display = 'block';
-    document.getElementById('themeSelect').value = currentTheme;
-    document.getElementById('languageSelect').value = currentLanguage;
+    document.getElementById('themeSelect').value = localStorage.getItem('theme') || 'dark';
+    document.getElementById('languageSelect').value = localStorage.getItem('language') || 'ru';
 }
 
 function closeSettings() {
@@ -46,19 +57,20 @@ function closeSettings() {
 }
 
 function saveSettings() {
-    currentTheme = document.getElementById('themeSelect').value;
-    currentLanguage = document.getElementById('languageSelect').value;
-    
-    localStorage.setItem('theme', currentTheme);
-    localStorage.setItem('language', currentLanguage);
-    
+    const theme = document.getElementById('themeSelect').value;
+    const language = document.getElementById('languageSelect').value;
+    localStorage.setItem('theme', theme);
+    localStorage.setItem('language', language);
     loadTheme();
     loadLanguage();
-    
     closeSettings();
 }
 
+// Загружаем при старте
 document.addEventListener('DOMContentLoaded', () => {
     loadTheme();
     loadLanguage();
 });
+
+// Экспортируем функцию для использования в других страницах
+window.updateTranslations = updateAllTranslations;

@@ -37,3 +37,17 @@ body {
     color: var(--accent-secondary);
     border-bottom: 1px solid var(--accent-secondary);
 }
+
+.favorite-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 10px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.favorite-btn:hover {
+    opacity: 1;
+}

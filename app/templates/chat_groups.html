@@ -20,18 +20,18 @@
                     <div class="menu-item" id="logoutBtn" data-i18n="logout">Выйти</div>
                 </div>
             </div>
-            <div>{{ user.name }} (ID: {{ user.id }})</div>
+            <div>{{ user.name }} (<span data-i18n="your_id">ID</span>: {{ user.user_tag }})</div>
         </div>
-        
+
         <div class="search-box">
-            <input type="number" id="searchId" data-i18n="search_user" placeholder="Введите ID пользователя">
+            <input type="text" id="searchId" data-i18n="search_user" placeholder="Введите ID пользователя (Wxxxxxxx)">
             <button id="searchBtn" data-i18n="search">🔍</button>
         </div>
-        
+
         <div class="create-group">
             <button id="createGroupBtn" data-i18n="create_group">Создать групповой чат</button>
         </div>
-        
+
         <div class="chats-list" id="chatsList"></div>
     </div>
     
@@ -42,7 +42,13 @@
             <div class="room-actions" id="roomActions"></div>
         </div>
         <div class="messages" id="messages">
-            <span data-i18n="welcome">Выберите чат для общения</span>
+            <div class="welcome-background">
+                <div class="logo-container">
+                    <img src="/static/logo-placeholder.png" alt="Weyrix Logo" class="welcome-logo">
+                    <h2 class="welcome-title">Weyrix</h2>
+                    <p class="welcome-text" data-i18n="welcome">Выберите чат для общения</p>
+                </div>
+            </div>
         </div>
         <div class="input-area">
             <input type="text" id="messageInput" data-i18n="enter_message" placeholder="Введите сообщение..." disabled>
@@ -52,6 +58,7 @@
     </div>
 </div>
 
+<!-- Модальные окна -->
 <div class="modal-overlay" id="settingsOverlay"></div>
 <div class="modal-settings" id="settingsModal">
     <h3 data-i18n="settings">Настройки</h3>
@@ -73,7 +80,6 @@
     <button id="cancelSettingsBtn" data-i18n="cancel">Отмена</button>
 </div>
 
-
 <div class="modal-overlay" id="groupOverlay"></div>
 <div class="modal-settings" id="groupModal">
     <h3 data-i18n="create_group">Создать групповой чат</h3>
@@ -83,17 +89,41 @@
     <button id="cancelGroupBtn" data-i18n="cancel">Отмена</button>
 </div>
 
+<!-- Модальное окно информации о группе -->
+<div class="modal-overlay" id="groupInfoOverlay"></div>
+<div class="modal-settings" id="groupInfoModal" style="width: 350px;">
+    <h3 id="groupInfoTitle" data-i18n="group_info">Информация о группе</h3>
+    <div id="groupInfoContent">
+        <div class="info-item">
+            <div class="info-label" data-i18n="group_name">Название</div>
+            <div class="info-value" id="groupInfoName"></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label" data-i18n="group_desc">Описание</div>
+            <div class="info-value" id="groupInfoDesc"></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label" data-i18n="members">Участники</div>
+            <div class="info-value" id="groupInfoMembers" style="white-space: pre-line;"></div>
+        </div>
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button id="inviteToGroupBtn" style="flex: 1;" data-i18n="invite"> Пригласить</button>
+        <button id="leaveGroupBtn" style="flex: 1;" data-i18n="leave_group"> Покинуть чат</button>
+        <button id="closeGroupInfoBtn" style="flex: 1;" data-i18n="close">Закрыть</button>
+    </div>
+</div>
 <input type="file" id="fileInput" style="display: none;">
 
+<script src="/static/js/settings.js"></script>
 <script>
-
     const currentUserId = {{ user.id }};
+    const currentUserTag = "{{ user.user_tag }}";
     
-
     let currentChatId = null;
     let currentChatIsPrivate = false;
     let socket = null;
-    
+    let chats = new Map();
 
     const menuButton = document.getElementById('menuButton');
     const menuDropdown = document.getElementById('menuDropdown');
@@ -133,10 +163,10 @@
     
     async function loadChats() {
         const response = await fetch('/chat/chats');
-        const chats = await response.json();
+        const chatsData = await response.json();
         chatsList.innerHTML = '';
         
-        for (const chat of chats) {
+        for (const chat of chatsData) {
             const chatDiv = document.createElement('div');
             chatDiv.className = 'chat-item' + (currentChatId === chat.id ? ' active' : '');
             chatDiv.setAttribute('data-chat-id', chat.id);
@@ -146,6 +176,7 @@
                 <div class="chat-preview">${escapeHtml(chat.last_message || 'Новое сообщение')}</div>
             `;
             chatsList.appendChild(chatDiv);
+            chats.set(chat.id, { name: chat.name, isPrivate: chat.is_private, lastMessage: chat.last_message });
         }
     }
     
@@ -160,7 +191,7 @@
         if (isSystem) messageClass = 'system-message';
         else if (isMyMessage) messageClass = 'my-message';
         else messageClass = 'other-message';
-    
+        
         let content = escapeHtml(message.content);
         const fileMatch = content.match(/📎 Файл: (.+?)\n(.+)/);
         if (fileMatch) {
@@ -168,9 +199,10 @@
             const fileUrl = fileMatch[2];
             content = `📎 <a href="${fileUrl}" target="_blank" class="file-link" download>${fileName}</a>`;
         }
-    
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${messageClass}`;
+        messageDiv.setAttribute('data-message-id', message.id);
         messageDiv.innerHTML = `
             <div class="message-bubble">
                 ${!isSystem && !isMyMessage ? '<div class="message-name">Пользователь</div>' : ''}
@@ -179,6 +211,7 @@
             </div>
         `;
         messagesDiv.appendChild(messageDiv);
+        messagesDiv.classList.add('has-messages');
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
     
@@ -189,30 +222,58 @@
         
         if (messages.length === 0) {
             messagesDiv.innerHTML = '<div class="welcome">Напишите первое сообщение!</div>';
+            messagesDiv.classList.remove('has-messages');
         } else {
             for (const msg of messages) {
                 addMessageToScreen(msg);
             }
+            messagesDiv.classList.add('has-messages');
         }
     }
     
-    async function selectChat(chatId) {
+        async function selectChat(chatId) {
         if (!chatId) return;
         
+        hideWelcomeBackground();
         currentChatId = chatId;
         
         const infoResponse = await fetch(`/chat/${chatId}/info`);
         const chatInfo = await infoResponse.json();
         currentChatIsPrivate = chatInfo.is_private;
         
-        let buttonsHtml = '';
-        if (!currentChatIsPrivate) {
-            buttonsHtml += `<button class="add-member" onclick="addMemberToGroup()"> Добавить участника</button>`;
-        }
-        const buttonText = currentChatIsPrivate ? ' Удалить чат' : ' Покинуть чат';
-        buttonsHtml += `<button class="leave-chat" onclick="leaveChat()">${buttonText}</button>`;
+        let otherUserName = chatInfo.name;
+        let otherUserId = null;
         
-        chatHeader.innerHTML = `<span>💬 ${escapeHtml(chatInfo.name || 'Чат')}</span>`;
+        const isFavorites = chatInfo.name === 'Избранное';
+        
+        if (currentChatIsPrivate && !isFavorites) {
+            const participantsResponse = await fetch(`/chat/${chatId}/members`);
+            const participants = await participantsResponse.json();
+            const otherUser = participants.find(u => u.id !== currentUserId);
+            if (otherUser) {
+                otherUserId = otherUser.id;
+                otherUserName = otherUser.name;
+            }
+        }
+        
+        let buttonsHtml = '';
+        
+        if (!currentChatIsPrivate && !isFavorites) {
+            buttonsHtml += `<button class="info-chat" onclick="openGroupInfo()" data-i18n="group_info"> Информация</button>`;
+        } else if (currentChatIsPrivate && !isFavorites) {
+            buttonsHtml += `<button class="leave-chat" onclick="leaveChat()" data-i18n="delete_chat"> Удалить чат</button>`;
+        }
+        
+        let chatNameDisplay = '';
+        if (isFavorites) {
+            chatNameDisplay = ' Избранное';
+        } else if (currentChatIsPrivate) {
+            chatNameDisplay = `<a href="#" onclick="viewUserProfile(${otherUserId}); return false;" style="color: inherit; text-decoration: none;">💬 ${escapeHtml(otherUserName)}</a>`;
+        } else {
+            chatNameDisplay = `<a href="#" onclick="openGroupInfo(); return false;" style="color: inherit; text-decoration: none;">👥 ${escapeHtml(chatInfo.name)}</a>`;
+        }
+        
+        chatHeader.innerHTML = `<span>${chatNameDisplay}</span>`;
         roomActions.innerHTML = buttonsHtml;
         
         messageInput.disabled = false;
@@ -228,27 +289,45 @@
             }
         });
     }
+
+    function viewUserProfile(userId) {
+        if (userId) {
+            window.location.href = `/auth/user/${userId}/profile`;
+        }
+    }
     
     async function startPrivateChat() {
-        const userId = searchId.value;
-        if (!userId) {
-            alert('Введите ID пользователя');
+        const userTag = searchId.value.trim();
+        if (!userTag) {
+            alert('Введите ID пользователя в формате Wxxxxxxx');
             return;
         }
         
-        if (parseInt(userId) === currentUserId) {
+        if (userTag === currentUserTag) {
             alert('Нельзя начать чат с самим собой');
             return;
         }
         
-        const response = await fetch(`/chat/private/create/${userId}`, { method: 'POST' });
-        if (response.ok) {
-            const room = await response.json();
-            searchId.value = '';
-            await loadChats();
-            selectChat(room.id);
-        } else {
-            alert('Пользователь не найден');
+        try {
+            const searchResponse = await fetch(`/auth/search/${userTag}`);
+            const user = await searchResponse.json();
+            
+            if (user && user.id) {
+                const privateResponse = await fetch(`/chat/private/create/${user.id}`, { method: 'POST' });
+                if (privateResponse.ok) {
+                    const room = await privateResponse.json();
+                    searchId.value = '';
+                    await loadChats();
+                    selectChat(room.id);
+                } else {
+                    alert('Ошибка создания чата');
+                }
+            } else {
+                alert('Пользователь не найден');
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            alert('Ошибка поиска пользователя');
         }
     }
     
@@ -274,9 +353,9 @@
             if (response.ok) {
                 currentChatId = null;
                 await loadChats();
-                chatHeader.innerHTML = '<span>💬 Weyrix</span>';
+                chatHeader.innerHTML = '<span>Weyrix</span>';
                 roomActions.innerHTML = '';
-                messagesDiv.innerHTML = '<div class="welcome">Выберите чат для общения</div>';
+                showWelcomeBackground();
                 messageInput.disabled = true;
                 sendBtn.disabled = true;
                 if (socket) {
@@ -287,7 +366,6 @@
         }
     };
     
-
     function showGroupModal() {
         groupOverlay.style.display = 'block';
         groupModal.style.display = 'block';
@@ -325,17 +403,10 @@
         }
     }
     
-
     function connectWebSocket() {
-        if (socket) {
-            socket.close();
-        }
+        if (socket) socket.close();
         
         socket = new WebSocket(`ws://${window.location.host}/chat/ws/${currentUserId}`);
-        
-        socket.onopen = () => {
-            console.log('WebSocket connected');
-        };
         
         socket.onmessage = (event) => {
             try {
@@ -349,55 +420,43 @@
             }
         };
         
-        socket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-        
         socket.onclose = () => {
-            console.log('WebSocket disconnected');
             setTimeout(() => {
-                if (currentChatId) {
-                    connectWebSocket();
-                }
+                if (currentChatId) connectWebSocket();
             }, 3000);
         };
     }
-
-    async function sendMessage() {
+    
+        async function sendMessage() {
         const message = messageInput.value.trim();
         
         if (message && currentChatId) {
-            addMessageToScreen({
+            const tempMessage = {
                 id: Date.now(),
                 room_id: currentChatId,
                 sender_id: currentUserId,
                 content: message,
                 created_at: new Date().toISOString(),
                 is_system: false
-            });
+            };
             
+            addMessageToScreen(tempMessage);
             messageInput.value = '';
             
-            try {
-                const response = await fetch(`/chat/${currentChatId}/messages`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: message })
-                });
-                
-                if (response.ok) {
-                    loadChats();
-                } else {
-                    alert('Ошибка при отправке сообщения');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Ошибка сети при отправке');
+            const response = await fetch(`/chat/${currentChatId}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: message })
+            });
+            
+            if (response.ok) {
+                loadChats();
+            } else {
+                alert('Ошибка при отправке сообщения');
             }
         }
     }
     
-
     function attachFile() {
         fileInput.click();
     }
@@ -405,39 +464,13 @@
     async function uploadFile(file) {
         const formData = new FormData();
         formData.append('file', file);
-        if (currentChatId) {
-            formData.append('room_id', currentChatId);
-        }
+        if (currentChatId) formData.append('room_id', currentChatId);
         
-        try {
-            const response = await fetch('/chat/upload', {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                const fileName = file.name;
-                const fileUrl = data.file_url;
-                
-                const message = `📎 Файл: ${fileName}\n${fileUrl}`;
-                
-                await fetch(`/chat/${currentChatId}/messages`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: message })
-                });
-            }
-        } catch (error) {
-            console.error('Upload error:', error);
-            alert('Ошибка загрузки файла');
-        }
-    }
-    
-    async function sendMessageWithFile(fileUrl) {
-        const message = `📎 Файл: ${fileUrl.split('/').pop()}\n${fileUrl}`;
+        const response = await fetch('/chat/upload', { method: 'POST', body: formData });
         
-        if (currentChatId) {
+        if (response.ok) {
+            const data = await response.json();
+            const message = `📎 Файл: ${file.name}\n${data.file_url}`;
             await fetch(`/chat/${currentChatId}/messages`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -447,13 +480,10 @@
     }
     
     fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            uploadFile(e.target.files[0]);
-        }
+        if (e.target.files.length > 0) uploadFile(e.target.files[0]);
         e.target.value = '';
     });
     
-
     function openSettings() {
         settingsOverlay.style.display = 'block';
         settingsModal.style.display = 'block';
@@ -475,18 +505,35 @@
         location.reload();
     }
     
-
     async function logout() {
         await fetch('/auth/logout/', { method: 'POST' });
         window.location.href = '/auth';
     }
     
-   
     function toggleMenu() {
         menuDropdown.classList.toggle('show');
     }
     
-   
+    function showWelcomeBackground() {
+        const inputArea = document.querySelector('.input-area');
+        messagesDiv.innerHTML = `
+            <div class="welcome-background">
+                <div class="logo-container">
+                    <img src="/static/logo-placeholder.png" alt="Weyrix Logo" class="welcome-logo">
+                    <h2 class="welcome-title">Weyrix</h2>
+                    <p class="welcome-text" data-i18n="welcome">Выберите чат для общения</p>
+                </div>
+            </div>
+        `;
+        if (inputArea) inputArea.classList.add('disabled');
+    }
+    
+    function hideWelcomeBackground() {
+        const inputArea = document.querySelector('.input-area');
+        if (inputArea) inputArea.classList.remove('disabled');
+    }
+    
+    // Обработчики событий
     menuButton.addEventListener('click', toggleMenu);
     document.addEventListener('click', (e) => {
         if (!menuButton.contains(e.target) && !menuDropdown.contains(e.target)) {
@@ -497,71 +544,118 @@
     profileBtn.addEventListener('click', () => window.location.href = '/auth/profile');
     settingsBtn.addEventListener('click', openSettings);
     logoutBtn.addEventListener('click', logout);
-    
     searchBtn.addEventListener('click', startPrivateChat);
     createGroupBtn.addEventListener('click', showGroupModal);
     attachBtn.addEventListener('click', attachFile);
     sendBtn.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
-    
+    messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
     settingsOverlay.addEventListener('click', closeSettings);
     saveSettingsBtn.addEventListener('click', saveSettings);
     cancelSettingsBtn.addEventListener('click', closeSettings);
-    
     groupOverlay.addEventListener('click', closeGroupModal);
     confirmGroupBtn.addEventListener('click', createGroup);
     cancelGroupBtn.addEventListener('click', closeGroupModal);
+
     
-
-    loadChats();
-
-    function loadThemeOnStart() {
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        const themeLink = document.getElementById('theme-style');
-        themeLink.href = `/static/css/themes/${savedTheme}.css`;
-    }
-    
-    function loadLanguageOnStart() {
-        const savedLanguage = localStorage.getItem('language') || 'ru';
-        const langSelect = document.getElementById('languageSelect');
-        if (langSelect) {
-            langSelect.value = savedLanguage;
-        }
-        fetch(`/static/i18n/${savedLanguage}.json`)
-            .then(response => response.json())
-            .then(translations => {
-                document.querySelectorAll('[data-i18n]').forEach(el => {
-                    const key = el.getAttribute('data-i18n');
-                    if (translations[key]) {
-                        if (el.tagName === 'INPUT' && el.placeholder) {
-                            el.placeholder = translations[key];
-                        } else {
-                            el.textContent = translations[key];
-                        }
-                    }
-                });
-                document.title = translations.app_name || 'Weyrix';
-            })
-            .catch(err => console.error('Language load error:', err));
-    }
-
     // Обработка кликов по ссылкам на файлы
     messagesDiv.addEventListener('click', (e) => {
         const link = e.target.closest('.file-link');
         if (link) {
             e.preventDefault();
-            const url = link.getAttribute('href');
-            window.open(url, '_blank');
+            window.open(link.getAttribute('href'), '_blank');
         }
     });
     
+    
+    async function openGroupInfo() {
+        if (!currentChatId) return;
+        
+        try {
+            const infoResponse = await fetch(`/chat/${currentChatId}/info`);
+            const chatInfo = await infoResponse.json();
+            
+            document.getElementById('groupInfoName').textContent = chatInfo.name || 'Без названия';
+            document.getElementById('groupInfoDesc').textContent = chatInfo.description || 'Нет описания';
+            
+            const membersResponse = await fetch(`/chat/${currentChatId}/members`);
+            const members = await membersResponse.json();
+            
+            let membersList = '';
+            members.forEach((member, index) => {
+                membersList += `${index + 1}. ${member.name} (${member.user_tag || member.id})\n`;
+            });
+            document.getElementById('groupInfoMembers').textContent = membersList || 'Нет участников';
+            
+            document.getElementById('groupInfoOverlay').style.display = 'block';
+            document.getElementById('groupInfoModal').style.display = 'block';
+        } catch (error) {
+            console.error('Error loading group info:', error);
+            alert('Ошибка загрузки информации о группе');
+        }
+    }
 
-    loadThemeOnStart();
-    loadLanguageOnStart();
-    loadChats();
+    function closeGroupInfo() {
+        document.getElementById('groupInfoOverlay').style.display = 'none';
+        document.getElementById('groupInfoModal').style.display = 'none';
+    }
 
+    async function inviteToGroup() {
+        const userId = prompt('Введите ID пользователя для приглашения (формат: Wxxxxxxx):');
+        if (userId && currentChatId) {
+            try {
+                const searchResponse = await fetch(`/auth/search/${userId}`);
+                const user = await searchResponse.json();
+                
+                if (user && user.id) {
+                    const response = await fetch(`/chat/${currentChatId}/add_member/${user.id}`, { method: 'POST' });
+                    const result = await response.json();
+                    alert(result.message || 'Пользователь добавлен');
+                    if (response.ok) {
+                        closeGroupInfo();
+                        await loadMessages(currentChatId);
+                    }
+                } else {
+                    alert('Пользователь не найден');
+                }
+            } catch (error) {
+                console.error('Error inviting user:', error);
+                alert('Ошибка при приглашении');
+            }
+        }
+    }
+
+    async function leaveGroup() {
+        if (confirm('Вы уверены, что хотите покинуть этот чат?')) {
+            const response = await fetch(`/chat/${currentChatId}/leave`, { method: 'POST' });
+            if (response.ok) {
+                closeGroupInfo();
+                currentChatId = null;
+                await loadChats();
+                chatHeader.innerHTML = '<span>Weyrix</span>';
+                roomActions.innerHTML = '';
+                showWelcomeBackground();
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
+                if (socket) {
+                    socket.close();
+                    socket = null;
+                }
+            }
+        }
+    }
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTheme();
+        loadLanguage();
+        loadChats();
+        showWelcomeBackground();
+    });
+            // Обработчики для информации о группе
+    document.getElementById('groupInfoOverlay')?.addEventListener('click', closeGroupInfo);
+    document.getElementById('closeGroupInfoBtn')?.addEventListener('click', closeGroupInfo);
+    document.getElementById('inviteToGroupBtn')?.addEventListener('click', inviteToGroup);
+    document.getElementById('leaveGroupBtn')?.addEventListener('click', leaveGroup);
 </script>
 </body>
 </html>

@@ -396,3 +396,85 @@ body {
     color: var(--text-secondary);
     padding: 40px;
 }
+
+/* Фоновое изображение, когда чат не выбран */
+.welcome-background {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    background: var(--bg-chat);
+}
+
+.logo-container {
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+}
+
+.welcome-logo {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 20px;
+    opacity: 0.8;
+}
+
+.welcome-title {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--accent-primary);
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+}
+
+.welcome-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.welcome-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Скрываем область сообщений, когда нет активного чата */
+.messages .welcome-background {
+    display: flex;
+}
+
+.messages .message {
+    display: none;
+}
+
+/* Показываем сообщения, когда есть активный чат */
+.messages.has-messages .welcome-background {
+    display: none;
+}
+
+.messages.has-messages .message {
+    display: flex;
+}
+
+/* Скрываем область ввода, когда нет активного чата */
+.input-area.disabled {
+    display: none !important;
+}
+
+.input-area {
+    display: flex;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color);
+    gap: 12px;
+    background: var(--bg-input-area);
+}
