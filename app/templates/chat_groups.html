@@ -25,7 +25,7 @@
 
         <div class="search-box">
             <input type="text" id="searchId" data-i18n="search_user" placeholder="Введите ID пользователя (Wxxxxxxx)">
-            <button id="searchBtn" data-i18n="search">🔍</button>
+            <button id="searchBtn" data-i18n="search"></button>
         </div>
 
         <div class="create-group">
@@ -91,7 +91,7 @@
 
 <!-- Модальное окно информации о группе -->
 <div class="modal-overlay" id="groupInfoOverlay"></div>
-<div class="modal-settings" id="groupInfoModal" style="width: 350px;">
+<div class="modal-settings" id="groupInfoModal" style="width: 400px;">
     <h3 id="groupInfoTitle" data-i18n="group_info">Информация о группе</h3>
     <div id="groupInfoContent">
         <div class="info-item">
@@ -104,7 +104,7 @@
         </div>
         <div class="info-item">
             <div class="info-label" data-i18n="members">Участники</div>
-            <div class="info-value" id="groupInfoMembers" style="white-space: pre-line;"></div>
+            <div class="info-value" id="groupInfoMembers" style="max-height: 200px; overflow-y: auto;"></div>
         </div>
     </div>
     <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -580,14 +580,41 @@
             const membersResponse = await fetch(`/chat/${currentChatId}/members`);
             const members = await membersResponse.json();
             
-            let membersList = '';
+            let membersList = document.createElement('div');
+            membersList.className = 'members-list';
+            
             members.forEach((member, index) => {
-                membersList += `${index + 1}. ${member.name} (${member.user_tag || member.id})\n`;
+                const memberDiv = document.createElement('div');
+                memberDiv.className = 'member-item';
+                memberDiv.style.cssText = 'padding: 8px; cursor: pointer; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;';
+                memberDiv.onclick = () => {
+                    closeGroupInfo();
+                    viewUserProfile(member.id);
+                };
+                
+                const avatar = document.createElement('div');
+                avatar.style.cssText = 'width: 32px; height: 32px; border-radius: 50%; background: var(--accent-primary); display: flex; align-items: center; justify-content: center; font-size: 16px;';
+                avatar.textContent = member.avatar ? '📷' : '👤';
+                
+                const info = document.createElement('div');
+                info.style.cssText = 'flex: 1;';
+                info.innerHTML = `
+                    <div style="font-weight: bold;">${escapeHtml(member.name)}</div>
+                    <div style="font-size: 11px; opacity: 0.7;">${member.user_tag || member.id}</div>
+                `;
+                
+                memberDiv.appendChild(avatar);
+                memberDiv.appendChild(info);
+                membersList.appendChild(memberDiv);
             });
-            document.getElementById('groupInfoMembers').textContent = membersList || 'Нет участников';
+            
+            const container = document.getElementById('groupInfoMembers');
+            container.innerHTML = '';
+            container.appendChild(membersList);
             
             document.getElementById('groupInfoOverlay').style.display = 'block';
             document.getElementById('groupInfoModal').style.display = 'block';
+            
         } catch (error) {
             console.error('Error loading group info:', error);
             alert('Ошибка загрузки информации о группе');

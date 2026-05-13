@@ -478,3 +478,117 @@ body {
     gap: 12px;
     background: var(--bg-input-area);
 }
+
+/* Стили для списка участников в информации о группе */
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.member-item {
+    transition: background 0.2s;
+    border-radius: 8px;
+}
+
+.member-item:hover {
+    background: var(--hover-bg);
+}
+
+/* Стили для модального окна информации о группе */
+#groupInfoModal {
+    width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#groupInfoModal .info-item {
+    margin-bottom: 15px;
+}
+
+#groupInfoModal .info-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+#groupInfoModal .info-value {
+    font-size: 14px;
+    word-break: break-word;
+}
+
+/* Анимация для модальных окон */
+.modal-settings {
+    animation: modalFadeIn 0.2s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Кнопка информации о группе */
+.info-chat {
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.info-chat:hover {
+    background: var(--hover-bg);
+}
+
+/* Участники в списке */
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.member-item:hover {
+    background: var(--hover-bg);
+    transform: translateX(4px);
+}
+
+.member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.member-info {
+    flex: 1;
+}
+
+.member-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.member-tag {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+/* Индикатор "Вы" для текущего пользователя */
+.member-current {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent-primary);
+}
