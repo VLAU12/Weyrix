@@ -180,7 +180,7 @@ async function leaveChat() {
 
 function connectWebSocket() {
     if (socket) socket.close();
-    socket = new WebSocket(`ws://${window.location.host}/chat/ws/${currentUserId}`);
+    socket = new WebSocket(`wss://${window.location.host}/chat/ws/${currentUserId}`);
     socket.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         if (msg.room_id === currentChatId) {

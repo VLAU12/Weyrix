@@ -188,7 +188,7 @@
     
     function connectWebSocket() {
         if (socket) socket.close();
-        socket = new WebSocket(`ws://${window.location.host}/chat/ws/${currentUserId}`);
+        socket = new WebSocket(`wss://${window.location.host}/chat/ws/${currentUserId}`);
         socket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             const otherUserId = msg.sender_id === currentUserId ? msg.recipient_id : msg.sender_id;

@@ -10,7 +10,7 @@ from app.users.schemas import SUserRegister, SUserAuth, SUserRead
 from app.users.dependencies import get_current_user
 from app.users.models import User
 from app.database import async_session_maker
-from app.chat.models import ChatRoom, ChatMember, Message  # <-- ДОБАВЛЕНО
+from app.chat.models import ChatRoom, ChatMember, Message
 import os
 import shutil
 from datetime import datetime
