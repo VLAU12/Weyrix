@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вейрикс (Weyrix) - удобное и безопасное общение</title>
+    <meta name="description" content="Weyrix представаляет собой быстрый, безопасный и стильный чат для общения. Присоединяйтесь к мессенджеру Вейрикс (Weyrix), так мы сможем вместе сделать мессенджер лучше!">
+    <meta name="keywords" content="мессенджер, чат, общение, безопасный чат, weyrix, вейрикс, Weyrix, сообщения">
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/themes/dark.css" id="theme-style">
+    <style>
+        /* Дополнительные стили для лендинга */
+        .landing-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Шапка */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-primary);
+        }
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+        .nav-links a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: var(--accent-primary);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent-primary);
+            padding: 8px 20px;
+            border-radius: 20px;
+            color: var(--accent-primary);
+        }
+        
+        /* Герой секция */
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .hero h1 {
+            font-size: 56px;
+            color: var(--accent-primary);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+        .hero p {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        .btn-primary {
+            display: inline-block;
+            padding: 14px 35px;
+            background: var(--accent-primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+        }
+        .btn-secondary {
+            display: inline-block;
+            padding: 14px 35px;
+            background: transparent;
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            background: var(--accent-primary);
+            color: white;
+        }
+        
+        /* Преимущества */
+        .features {
+            padding: 60px 0;
+            text-align: center;
+        }
+        .features h2 {
+            font-size: 36px;
+            margin-bottom: 40px;
+            color: var(--text-primary);
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+        .feature-card {
+            background: var(--bg-sidebar);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-primary);
+        }
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .feature-card h3 {
+            color: var(--accent-primary);
+            margin-bottom: 15px;
+        }
+        .feature-card p {
+            color: var(--text-secondary);
+        }
+        
+        /* Призыв к действию */
+        .cta {
+            background: var(--bg-sidebar);
+            text-align: center;
+            padding: 60px 20px;
+            border-radius: 24px;
+            margin: 40px 0;
+        }
+        .cta h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+        .cta p {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+        }
+        
+        /* Подвал */
+        .footer {
+            text-align: center;
+            padding: 40px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+        .footer a {
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 36px; }
+            .navbar { flex-direction: column; gap: 15px; }
+            .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
+            .hero-buttons { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="landing-container">
+    <!-- Шапка -->
+    <div class="navbar">
+        <div class="logo">WEYRIX</div>
+        <div class="nav-links">
+            <a href="#features">Возможности</a>
+            <a href="#about">О нас</a>
+            <a href="/auth" class="btn-outline">Войти</a>
+        </div>
+    </div>
+
+    <!-- Герой секция -->
+    <div class="hero">
+        <h1>Weyrix</h1>
+        <p>Современный, быстрый и безопасный мессенджер для общения с друзьями и близкими</p>
+        <div class="hero-buttons">
+            <a href="/auth" class="btn-primary">✉ Начать общаться 💻</a>
+            <a href="#features" class="btn-secondary"> Узнать больше 🗿</a>
+        </div>
+    </div>
+
+    <!-- Преимущества -->
+    <div class="features" id="features">
+        <h2>Почему стоит попробовать мессенджер Weyrix?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3>Реальное время</h3>
+                <p>Мгновенная доставка сообщений через WebSocket. Никаких задержек!</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <h3>Групповые чаты</h3>
+                <p>Создавайте группы с друзьями, коллегами или единомышленниками</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📎</div>
+                <h3>Обмен файлами</h3>
+                <p>Отправляйте фотографии, документы и другие файлы</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <h3>Стильный дизайн</h3>
+                <p>Тёмная и светлая темы на ваш вкус</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Безопасность</h3>
+                <p>Ваши данные защищены современными методами шифрования</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌍</div>
+                <h3>Доступность</h3>
+                <p>Пользуйтесь с любого устройства через браузер</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌍</div>
+                <h3>Развитие и обратная связь</h3>
+                <p>Вейрикс (Weyrix) является новым проектом, который активно разивается и обновляется для удобства пользователей</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Призыв к действию -->
+    <div class="cta">
+        <h2>Хотите попробовать мессенджер Weyrix?</h2>
+        <p>Присоединяйтесь в мессенджер Weyrix и попробуйте общаться с другими пользователями</p>
+        <a href="/auth" class="btn-primary">Зарегистрироваться</a>
+    </div>
+
+    <!-- Подвал -->
+    <div class="footer">
+        <p>© 2026 Weyrix (В.А. Юдников). Все права защищены.</p>
+        <p><a href="/auth">Вход</a> | <a href="/auth">Регистрация</a></p>
+    </div>
+</div>
+</body>
+</html>
