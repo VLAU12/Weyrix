@@ -29,14 +29,15 @@ app.include_router(chat_router)
 
 
 @app.get("/")
-async def landing_page(request: Request, user: User = Depends(get_current_user)):
-    # Если пользователь авторизован, отправляем в чат
+async def landing_page(request: Request):
+    # Пытаемся получить текущего пользователя
     try:
+        user = await get_current_user(request)
         if user:
             return RedirectResponse(url="/chat")
     except:
         pass
-    # Иначе показываем лендинг
+    # Если пользователь не авторизован — показываем лендинг
     return templates.TemplateResponse("landing.html", {"request": request})
 
 
