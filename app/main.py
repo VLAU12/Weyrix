@@ -9,6 +9,8 @@ from app.users.router import router as users_router
 from app.chat.router import router as chat_router
 from app.users.dependencies import get_current_user
 from app.users.models import User
+from fastapi.responses import HTMLResponse
+from fastapi import FastAPI
 
 app = FastAPI()
 templates = Jinja2Templates(directory='app/templates')
@@ -49,3 +51,11 @@ async def token_expired_exception_handler(request: Request, exc: HTTPException):
 @app.exception_handler(TokenNoFoundException)
 async def token_no_found_exception_handler(request: Request, exc: HTTPException):
     return RedirectResponse(url="/auth")
+
+@app.get("/google3926764af44d929c.html", response_class=HTMLResponse)
+async def verify_google():
+    # Укажите правильный путь к вашему файлу
+    file_path = "google3926764af44d929c.html"
+    with open(file_path, "r", encoding="utf-8") as file:
+        content = file.read()
+    return HTMLResponse(content=content)
