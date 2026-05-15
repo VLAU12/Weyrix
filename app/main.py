@@ -59,9 +59,11 @@ async def verify_google():
     with open(file_path, "r", encoding="utf-8") as file:
         content = file.read()
     return HTMLResponse(content=content)
-@app.get("/init-db")
-async def init_db():
-    from app.database import engine, Base
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    return {"message": "✅ Таблицы успешно созданы!"}
+
+
+#@app.get("/init-db")
+#async def init_db():
+#    from app.database import engine, Base
+#    async with engine.begin() as conn:
+#        await conn.run_sync(Base.metadata.create_all)
+#    return {"message": "✅ Таблицы успешно созданы!"}
