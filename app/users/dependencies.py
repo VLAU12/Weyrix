@@ -30,8 +30,13 @@ async def get_current_user(token: str = Depends(get_token)):
     if not user_id:
         raise NoUserIdException
     
-    # user_id теперь строка, не нужно преобразовывать в int
-    user = await UsersDAO.find_one_or_none_by_id(user_id)  # Убрали int()
+    # Преобразуем строковый ID в число для PostgreSQL
+    try:
+        user_id_int = int(user_id)
+        user = await UsersDAO.find_one_or_none_by_id(user_id_int)
+    except (ValueError, TypeError):
+        user = None
+    
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='User not found')
     return user
