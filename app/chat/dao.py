@@ -12,8 +12,9 @@ class ChatRoomDAO(BaseDAO):
         async with async_session_maker() as session:
             async with session.begin():
                 if member_ids and len(member_ids) == 1:
-                    user1_id = created_by_id
-                    user2_id = member_ids[0]
+                    # ПРЕОБРАЗУЕМ В INT ДЛЯ POSTGRESQL
+                    user1_id = int(created_by_id)
+                    user2_id = int(member_ids[0])
                     
                     room_query = select(ChatRoom).filter(
                         and_(
@@ -31,21 +32,22 @@ class ChatRoomDAO(BaseDAO):
                     if existing_room:
                         return existing_room
                 
+                # ПРЕОБРАЗУЕМ В INT ДЛЯ POSTGRESQL
                 room = ChatRoom(
-                    created_by_id=created_by_id,
+                    created_by_id=int(created_by_id),
                     is_private=True,
                     name=None
                 )
                 session.add(room)
                 await session.flush()
                 
-                creator_member = ChatMember(room_id=room.id, user_id=created_by_id, is_admin=True)
+                creator_member = ChatMember(room_id=room.id, user_id=int(created_by_id), is_admin=True)
                 session.add(creator_member)
                 
                 if member_ids:
                     for user_id in member_ids:
                         if user_id != created_by_id:
-                            member = ChatMember(room_id=room.id, user_id=user_id)
+                            member = ChatMember(room_id=room.id, user_id=int(user_id))
                             session.add(member)
                 
                 await session.commit()
@@ -126,8 +128,11 @@ class ChatRoomDAO(BaseDAO):
                 if not room:
                     return None
                 
+                # ПРЕОБРАЗУЕМ В INT
+                user_id_int = int(user_id)
+                
                 query = select(ChatMember).filter(
-                    and_(ChatMember.room_id == room_id, ChatMember.user_id == user_id)
+                    and_(ChatMember.room_id == room_id, ChatMember.user_id == user_id_int)
                 )
                 result = await session.execute(query)
                 existing = result.scalar_one_or_none()
@@ -135,18 +140,18 @@ class ChatRoomDAO(BaseDAO):
                 if existing:
                     return existing
                 
-                member = ChatMember(room_id=room_id, user_id=user_id)
+                member = ChatMember(room_id=room_id, user_id=user_id_int)
                 session.add(member)
                 
                 from app.users.models import User
-                user_query = select(User.name).filter(User.id == user_id)
+                user_query = select(User.name).filter(User.id == user_id_int)
                 user_result = await session.execute(user_query)
                 user_name = user_result.scalar()
                 
                 system_msg = Message(
                     room_id=room_id,
-                    sender_id=user_id,
-                    content=f"👤 Пользователь {user_name} присоединился к чату",
+                    sender_id=user_id_int,
+                    content=f" Пользователь {user_name} присоединился к чату",
                     is_system=True
                 )
                 session.add(system_msg)
@@ -181,7 +186,7 @@ class ChatRoomDAO(BaseDAO):
                 system_msg = Message(
                     room_id=room_id,
                     sender_id=user_id,
-                    content=f"👋 Пользователь {user_name} покинул чат",
+                    content=f" Пользователь {user_name} покинул чат",
                     is_system=True
                 )
                 session.add(system_msg)
