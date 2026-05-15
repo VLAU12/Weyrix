@@ -592,3 +592,12 @@ body {
     background: var(--accent-light);
     border-left: 3px solid var(--accent-primary);
 }
+
+.welcome-logo {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 20px;
+    opacity: 0.9;
+    border-radius: 50%; 
+    object-fit: contain;
+}
