@@ -32,16 +32,6 @@
             margin-bottom: 30px;
             color: var(--accent-primary);
         }
-        h2 {
-            font-size: 12px;
-            margin-bottom: 10px;
-            color: grey;
-        }
-        h3 {
-            font-size: 12px;
-            margin-bottom: 30px;
-            color: grey;
-        }
         .tabs {
             display: flex;
             gap: 10px;
@@ -66,20 +56,41 @@
         .form.active {
             display: block;
         }
-        input {
+        .input-group {
+            position: relative;
+            margin: 10px 0;
+        }
+        .input-group input {
             width: 100%;
             padding: 12px;
-            margin: 10px 0;
+            padding-right: 45px;
             background: var(--bg-input);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             color: var(--text-primary);
+            box-sizing: border-box;
         }
-        input:focus {
+        .input-group input:focus {
             outline: none;
             border-color: var(--accent-primary);
         }
-        button {
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 18px;
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+        .password-toggle:hover {
+            color: var(--accent-primary);
+        }
+        button[type="button"] {
             width: 100%;
             padding: 12px;
             margin-top: 20px;
@@ -90,7 +101,7 @@
             cursor: pointer;
             font-weight: bold;
         }
-        button:hover {
+        button[type="button"]:hover {
             opacity: 0.9;
         }
     </style>
@@ -98,34 +109,64 @@
 <body>
 <div class="auth-container">
     <div class="auth-card">
-        <div class="logo">.</div>
+        <div class="logo">💬</div>
         <h1>WEYRIX</h1>
-        <h2>Добро пожаловать в мессенджер Weyrix!</h2>
-        <h3>Пожалуйста, пройдите регистрацию и войдите в свой аккаунт</h3>
-
         
         <div class="tabs">
             <div class="tab active" data-tab="login">Вход</div>
             <div class="tab" data-tab="register">Регистрация</div>
         </div>
         
+        <!-- Форма входа -->
         <div id="loginForm" class="form active">
-            <input type="email" id="loginEmail" placeholder="Email">
-            <input type="password" id="loginPassword" placeholder="Пароль">
-            <button id="loginButton">Войти</button>
+            <div class="input-group">
+                <input type="email" id="loginEmail" placeholder="Email">
+            </div>
+            <div class="input-group">
+                <input type="password" id="loginPassword" placeholder="Пароль">
+                <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">👁</button>
+            </div>
+            <button type="button" id="loginButton">Войти</button>
         </div>
         
+        <!-- Форма регистрации -->
         <div id="registerForm" class="form">
-            <input type="email" id="regEmail" placeholder="Email">
-            <input type="text" id="regName" placeholder="Имя">
-            <input type="password" id="regPassword" placeholder="Пароль">
-            <input type="password" id="regPasswordCheck" placeholder="Повторите пароль">
-            <button id="registerButton">Зарегистрироваться</button>
+            <div class="input-group">
+                <input type="email" id="regEmail" placeholder="Email">
+            </div>
+            <div class="input-group">
+                <input type="text" id="regName" placeholder="Имя">
+            </div>
+            <div class="input-group">
+                <input type="password" id="regPassword" placeholder="Пароль">
+                <button type="button" class="password-toggle" onclick="togglePassword('regPassword')">👁</button>
+            </div>
+            <div class="input-group">
+                <input type="password" id="regPasswordCheck" placeholder="Повторите пароль">
+                <button type="button" class="password-toggle" onclick="togglePassword('regPasswordCheck')">👁</button>
+            </div>
+            <button type="button" id="registerButton">Зарегистрироваться</button>
         </div>
     </div>
 </div>
 
+<script src="/static/js/settings.js"></script>
 <script>
+    // Функция показа/скрытия пароля
+    function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        const toggleBtn = field.nextElementSibling;
+        
+        if (field.type === 'password') {
+            field.type = 'text';
+            toggleBtn.textContent = '⌣';
+        } else {
+            field.type = 'password';
+            toggleBtn.textContent = '👁';
+        }
+    }
+    
+    // Переключение вкладок
     const tabs = document.querySelectorAll('.tab');
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
@@ -133,6 +174,7 @@
     function switchTab(tabName) {
         tabs.forEach(tab => tab.classList.remove('active'));
         document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+        
         if (tabName === 'login') {
             loginForm.classList.add('active');
             registerForm.classList.remove('active');
@@ -146,6 +188,7 @@
         tab.addEventListener('click', () => switchTab(tab.getAttribute('data-tab')));
     });
     
+    // Регистрация
     document.getElementById('registerButton').onclick = async () => {
         const data = {
             email: document.getElementById('regEmail').value,
@@ -153,30 +196,40 @@
             password: document.getElementById('regPassword').value,
             password_check: document.getElementById('regPasswordCheck').value
         };
+        
         const response = await fetch('/auth/register/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
+        
         const result = await response.json();
         if (response.ok) {
             alert('Регистрация успешна! Теперь войдите.');
             switchTab('login');
+            // Очищаем поля регистрации
+            document.getElementById('regEmail').value = '';
+            document.getElementById('regName').value = '';
+            document.getElementById('regPassword').value = '';
+            document.getElementById('regPasswordCheck').value = '';
         } else {
             alert(result.detail || 'Ошибка регистрации');
         }
     };
     
+    // Вход
     document.getElementById('loginButton').onclick = async () => {
         const data = {
             email: document.getElementById('loginEmail').value,
             password: document.getElementById('loginPassword').value
         };
+        
         const response = await fetch('/auth/login/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
+        
         const result = await response.json();
         if (response.ok) {
             window.location.href = '/chat';
@@ -184,6 +237,15 @@
             alert(result.detail || 'Неверный email или пароль');
         }
     };
+    
+    // Загрузка темы при старте
+    function loadThemeOnStart() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        const themeLink = document.getElementById('theme-style');
+        if (themeLink) themeLink.href = `/static/css/themes/${savedTheme}.css`;
+    }
+    
+    loadThemeOnStart();
 </script>
 </body>
 </html>
