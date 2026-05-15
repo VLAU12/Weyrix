@@ -86,11 +86,13 @@
             padding: 0;
             color: var(--text-secondary);
             transition: color 0.2s;
+            width: auto;
+            margin: 0;
         }
         .password-toggle:hover {
             color: var(--accent-primary);
         }
-        button[type="button"] {
+        .auth-btn {
             width: 100%;
             padding: 12px;
             margin-top: 20px;
@@ -101,7 +103,7 @@
             cursor: pointer;
             font-weight: bold;
         }
-        button[type="button"]:hover {
+        .auth-btn:hover {
             opacity: 0.9;
         }
     </style>
@@ -124,9 +126,9 @@
             </div>
             <div class="input-group">
                 <input type="password" id="loginPassword" placeholder="Пароль">
-                <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">👁</button>
+                <button type="button" class="password-toggle" id="loginToggleBtn">👁</button>
             </div>
-            <button type="button" id="loginButton">Войти</button>
+            <button type="button" class="auth-btn" id="loginButton">Войти</button>
         </div>
         
         <!-- Форма регистрации -->
@@ -139,32 +141,51 @@
             </div>
             <div class="input-group">
                 <input type="password" id="regPassword" placeholder="Пароль">
-                <button type="button" class="password-toggle" onclick="togglePassword('regPassword')">👁</button>
             </div>
             <div class="input-group">
                 <input type="password" id="regPasswordCheck" placeholder="Повторите пароль">
-                <button type="button" class="password-toggle" onclick="togglePassword('regPasswordCheck')">👁</button>
+                <button type="button" class="password-toggle" id="registerToggleBtn">👁</button>
             </div>
-            <button type="button" id="registerButton">Зарегистрироваться</button>
+            <button type="button" class="auth-btn" id="registerButton">Зарегистрироваться</button>
         </div>
     </div>
 </div>
 
 <script src="/static/js/settings.js"></script>
 <script>
-    // Функция показа/скрытия пароля
-    function togglePassword(fieldId) {
-        const field = document.getElementById(fieldId);
-        const toggleBtn = field.nextElementSibling;
-        
-        if (field.type === 'password') {
-            field.type = 'text';
-            toggleBtn.textContent = '⌣';
+    // Переключение показа пароля для формы входа
+    const loginToggleBtn = document.getElementById('loginToggleBtn');
+    const loginPassword = document.getElementById('loginPassword');
+    
+    loginToggleBtn.addEventListener('click', () => {
+        if (loginPassword.type === 'password') {
+            loginPassword.type = 'text';
+            loginToggleBtn.textContent = '⌣';
         } else {
-            field.type = 'password';
-            toggleBtn.textContent = '👁';
+            loginPassword.type = 'password';
+            loginToggleBtn.textContent = '👁';
         }
-    }
+    });
+    
+    // Переключение показа паролей для формы регистрации (оба поля сразу)
+    const registerToggleBtn = document.getElementById('registerToggleBtn');
+    const regPassword = document.getElementById('regPassword');
+    const regPasswordCheck = document.getElementById('regPasswordCheck');
+    let registerVisible = false;
+    
+    registerToggleBtn.addEventListener('click', () => {
+        if (!registerVisible) {
+            regPassword.type = 'text';
+            regPasswordCheck.type = 'text';
+            registerToggleBtn.textContent = '⌣';
+            registerVisible = true;
+        } else {
+            regPassword.type = 'password';
+            regPasswordCheck.type = 'password';
+            registerToggleBtn.textContent = '👁';
+            registerVisible = false;
+        }
+    });
     
     // Переключение вкладок
     const tabs = document.querySelectorAll('.tab');
@@ -207,7 +228,6 @@
         if (response.ok) {
             alert('Регистрация успешна! Теперь войдите.');
             switchTab('login');
-            // Очищаем поля регистрации
             document.getElementById('regEmail').value = '';
             document.getElementById('regName').value = '';
             document.getElementById('regPassword').value = '';
