@@ -488,4 +488,5 @@ SOFTWARE.
 - Проект: https://weyrix.onrender.com
 - Email: udnikovvladimir785@gmail.com
 
+
 WEYRIX — надёжный инструмент для общения. Приятного использования!
