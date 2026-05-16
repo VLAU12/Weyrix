@@ -594,11 +594,11 @@ body {
 }
 
 .welcome-logo {
-    width: 120px;
-    height: 120px;
+    width: 140px;
+    height: 140px;
     margin-bottom: 20px;
     opacity: 0.9;
-    border-radius: 70%; 
+    border-radius: 90%; 
     object-fit: contain;
     border-color: black;
     border-style: solid;
