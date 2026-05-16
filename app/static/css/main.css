@@ -412,12 +412,6 @@ body {
     animation: fadeIn 0.5s ease;
 }
 
-.welcome-logo {
-    width: 120px;
-    height: 120px;
-    margin-bottom: 20px;
-    opacity: 0.8;
-}
 
 .welcome-title {
     font-size: 28px;
@@ -600,7 +594,4 @@ body {
     opacity: 0.9;
     border-radius: 90%; 
     object-fit: contain;
-    border-color: black;
-    border-style: solid;
-    border-width: 2px;
 }
