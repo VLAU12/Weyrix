@@ -591,7 +591,6 @@ body {
     width: 140px;
     height: 140px;
     margin-bottom: 20px;
-    opacity: 0.9;
-    border-radius: 90%; 
+    opacity: 0.9; 
     object-fit: contain;
 }
