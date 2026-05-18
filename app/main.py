@@ -67,3 +67,10 @@ async def verify_google():
 #    async with engine.begin() as conn:
 #        await conn.run_sync(Base.metadata.create_all)
 #    return {"message": "✅ Таблицы успешно созданы!"}
+
+@app.get("/yandex_f0d033a5ab75c5a6.html", response_class=HTMLResponse)
+async def verify_yandex():
+    file_path = "app/static/yandex_f0d033a5ab75c5a6.html"
+    with open(file_path, "r", encoding="utf-8") as file:
+        content = file.read()
+    return HTMLResponse(content=content)
