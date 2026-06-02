@@ -94,7 +94,7 @@ async def logout_user(response: Response):
 @router.get("/users", response_model=List[SUserRead])
 async def get_users():
     users_all = await UsersDAO.find_all()
-    return [{'id': user.id, 'name': user.name} for user in users_all]
+    return [{'id': user.id, 'user_tag': user.user_tag, 'name': user.name} for user in users_all]
 
 @router.get("/search/{user_tag}")
 async def search_user(user_tag: str):

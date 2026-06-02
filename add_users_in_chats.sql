@@ -1,0 +1,91 @@
+-- SQLite
+-- Очистка таблицы перед заполнением
+DELETE FROM chat_members;
+
+-- Приватные чаты (по 2 участника на 4 чата = 8 записей)
+INSERT INTO chat_members (room_id, user_id, joined_at, last_read_at, is_admin) VALUES
+(1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+(1, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+(2, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(3, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+(3, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(4, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+(4, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+
+-- Чат 5 (Рабочий чат) - 9 участников
+INSERT INTO chat_members (room_id, user_id, joined_at, last_read_at, is_admin) VALUES
+(5, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+(5, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(5, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(5, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(5, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(5, 6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(5, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(5, 8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(5, 9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+
+-- Чат 6 (Семья) - 6 участников
+INSERT INTO chat_members (room_id, user_id, joined_at, last_read_at, is_admin) VALUES
+(6, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+(6, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(6, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(6, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(6, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(6, 6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+
+-- Чат 7 (Друзья) - 7 участников
+INSERT INTO chat_members (room_id, user_id, joined_at, last_read_at, is_admin) VALUES
+(7, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+(7, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(7, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(7, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(7, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(7, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(7, 8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+
+-- Чат 8 (IT Сообщество) - 8 участников
+INSERT INTO chat_members (room_id, user_id, joined_at, last_read_at, is_admin) VALUES
+(8, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+(8, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(8, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(8, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(8, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(8, 8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(8, 9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(8, 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+
+-- Чат 9 (Спорт) - 5 участников
+INSERT INTO chat_members (room_id, user_id, joined_at, last_read_at, is_admin) VALUES
+(9, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+(9, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(9, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(9, 6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(9, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+
+-- Чат 10 (Путешествия) - 6 участников
+INSERT INTO chat_members (room_id, user_id, joined_at, last_read_at, is_admin) VALUES
+(10, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+(10, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(10, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(10, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(10, 6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0),
+(10, 8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+
+-- Очистка таблицы перед заполнением
+DELETE FROM chat_rooms;
+
+-- Добавление 10 чатов (4 приватных и 6 групповых)
+INSERT INTO chat_rooms (name, description, created_by_id, created_at, is_private, is_active) VALUES
+-- Приватные чаты
+(NULL, NULL, 1, CURRENT_TIMESTAMP, 1, 1),
+(NULL, NULL, 2, CURRENT_TIMESTAMP, 1, 1),
+(NULL, NULL, 3, CURRENT_TIMESTAMP, 1, 1),
+(NULL, NULL, 4, CURRENT_TIMESTAMP, 1, 1),
+-- Групповые чаты
+('Рабочий чат', 'Обсуждение рабочих вопросов и проектов', 1, CURRENT_TIMESTAMP, 0, 1),
+('Семья', 'Семейные дела и планы', 2, CURRENT_TIMESTAMP, 0, 1),
+('Друзья', 'Встречи и общение', 3, CURRENT_TIMESTAMP, 0, 1),
+('IT Сообщество', 'Новости IT и помощь друг другу', 1, CURRENT_TIMESTAMP, 0, 1),
+('Спорт', 'Обсуждение спортивных событий', 4, CURRENT_TIMESTAMP, 0, 1),
+('Путешествия', 'Планирование поездок', 5, CURRENT_TIMESTAMP, 0, 1);
